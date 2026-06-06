@@ -12,6 +12,7 @@ const DEPARTMENTS = [
   { id: "kitchen",       label: "Kitchen" },
   { id: "finance",       label: "Finance" },
   { id: "engineering",   label: "Engineering" },
+  { id: "Spa & Recreation",   label: "Spa & Recreation" },
 ];
  
 const SECTION_META = [
