@@ -756,32 +756,43 @@ export default function App() {
   }
  
   async function handleSubmit(answers) {
-    const score = calcScore(sections, answers);
-    const passed = score >= PASS_MARK;
+    // 1. Calculate score and timestamp early
+    const score = calcScore(answers);
     const ts = new Date().toLocaleString("en-IN");
-    const deptLabel = DEPARTMENTS.find(d => d.id === deptId)?.label || deptId;
- 
-    saveAttempt(name, score, passed);
-    const newData = getAttemptData(name);
- 
-    const breakdown = sections.map((s,si) => {
-      const c = s.questions.filter((q,qi)=>answers[si]?.[qi]===q.answer).length;
-      return `${s.name}: ${c}/${s.questions.length}`;
-    }).join(" | ");
- 
-    let savedOk = false;
+    setSavedAt(ts);
+    setFinalAnswers(answers);
+
+    // 2. Format section-wise breakdown for a clean email read
+    const sectionBreakdown = SECTIONS.map((sec, si) => {
+      const correct = sec.questions.filter((q, qi) => answers[si]?.[qi] === q.answer).length;
+      return `• ${sec.name}: ${correct} / ${sec.questions.length}`;
+    }).join("\n");
+
+    const percentage = Math.round((score / TOTAL_QUESTIONS) * 100);
+
+    // 3. Prepare optimized data payload
+    const emailPayload = {
+      Candidate_Name: name,
+      Final_Score: `${score} / ${TOTAL_QUESTIONS} (${percentage}%)`,
+      Status: score >= PASS_MARK ? "PASSED ✅" : "FAILED ❌",
+      Submitted_At: ts,
+      Section_Performance: "\n" + sectionBreakdown
+    };
+
+    // 4. Send directly to Formspree
     try {
-      await fetch(SHEETS_URL, {
-        method:"POST", mode:"no-cors",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ name, department:deptLabel, score, total:TOTAL_QUESTIONS_CALC,
-          percentage:Math.round((score/TOTAL_QUESTIONS_CALC)*100)+"%",
-          passed:passed?"YES":"NO", attempt:newData.count, submittedAt:ts, sectionBreakdown:breakdown }),
+      await fetch("https://formspree.io/f/YOUR_FORM_ID", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailPayload),
       });
-      savedOk = true;
-    } catch { savedOk = false; }
- 
-    setResult({ answers, savedOk, attemptCount:newData.count });
+    } catch (e) {
+      console.error("Formspree delivery error:", e);
+    }
+
+    // 5. Instantly transition to the score screen for the user
     setPhase("results");
   }
  
