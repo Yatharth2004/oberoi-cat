@@ -24,15 +24,43 @@ const SECTION_META = [
 
 const TOTAL_QUESTIONS_CALC = SECTION_META.reduce((s, m) => s + m.count, 0);
 
-// ── COMMON QUESTION POOLS (all departments) ───────────────────────────────────
+// ── COMMON QUESTION POOLS (Drawings added via custom Draw functions) ─────────
 const COMMON = {
   abstract: [
+    /* Drawn Pattern Reasoning Example 1 */
+    { 
+      q: "Pattern Reasoning: Look closely at the sequence of matrices below. What logically completes the pattern inside the final box?", 
+      options: ["A square with 4 dots", "A triangle with 3 dots", "A circle with 1 dot", "An empty hexagon"], 
+      answer: 1,
+      draw: () => (
+        <svg viewBox="0 0 400 100" style={{ width: "100%", maxWidth: "400px", background: "#111723", padding: "10px", borderRadius: "4px", border: "1px solid #1e2638" }}>
+          {/* Box 1 */}
+          <rect x="10" y="10" width="80" height="80" fill="none" stroke="#c9a84c" strokeWidth="2"/>
+          <line x1="10" y1="10" x2="90" y2="90" stroke="#7e8a9f" strokeWidth="1" />
+          <circle cx="30" cy="30" r="4" fill="#c9a84c" />
+          {/* Box 2 */}
+          <rect x="110" y="10" width="80" height="80" fill="none" stroke="#c9a84c" strokeWidth="2"/>
+          <line x1="110" y1="10" x2="190" y2="90" stroke="#7e8a9f" strokeWidth="1" />
+          <line x1="190" y1="10" x2="110" y2="90" stroke="#7e8a9f" strokeWidth="1" />
+          <circle cx="130" cy="30" r="4" fill="#c9a84c" />
+          <circle cx="170" cy="30" r="4" fill="#c9a84c" />
+          {/* Box 3 */}
+          <rect x="210" y="10" width="80" height="80" fill="none" stroke="#c9a84c" strokeWidth="2"/>
+          <circle cx="250" cy="50" r="25" fill="none" stroke="#7e8a9f" strokeWidth="2" />
+          {/* Arrow */}
+          <text x="305" y="55" fill="#c9a84c" fontSize="20" fontWeight="bold">➔</text>
+          {/* Target Box */}
+          <rect x="340" y="10" width="50" height="80" fill="none" stroke="#c9a84c" strokeWidth="2" strokeDasharray="4"/>
+          <text x="360" y="55" fill="#7e8a9f" fontSize="24">?</text>
+        </svg>
+      )
+    },
     { q: "Series: 2, 4, 8, 16, __?", options: ["24","32","30","36"], answer: 1 },
     { q: "Series: 1, 4, 9, 16, 25, __?", options: ["30","35","36","49"], answer: 2 },
     { q: "Series: 100, 96, 89, 79, 66, __?", options: ["50","53","49","55"], answer: 0 },
     { q: "Fibonacci — 1, 1, 2, 3, 5, 8, 13, __?", options: ["18","20","21","26"], answer: 2 },
     { q: "Series: 2, 6, 12, 20, 30, __?", options: ["40","42","44","48"], answer: 1 },
-    { q: "Series: 3, 6, 11, 18, 27, __? (differences +2)", options: ["36","38","40","42"], answer: 1 },
+    { q: "Series: 3, 6, 11, 18, 27, __?", options: ["36","38","40","42"], answer: 1 },
     { q: "Series: 1, 2, 4, 7, 11, 16, __?", options: ["20","22","24","26"], answer: 1 },
     { q: "Series: 6, 11, 21, 36, 56, __?", options: ["76","79","81","83"], answer: 2 },
     { q: "Series: 144, 121, 100, 81, __?", options: ["64","68","72","70"], answer: 0 },
@@ -43,8 +71,8 @@ const COMMON = {
     { q: "Letter series: Z, X, V, T, __?", options: ["R","S","Q","P"], answer: 0 },
     { q: "Letter series: A, D, G, J, __?", options: ["K","L","M","N"], answer: 2 },
     { q: "Letter series: A, Z, B, Y, C, __?", options: ["D","W","X","V"], answer: 2 },
-    { q: "Analogy — 3 : 27 :: 4 : __? (cubes)", options: ["48","64","16","32"], answer: 1 },
-    { q: "Analogy — 4 : 64 :: 5 : __? (cubes)", options: ["100","115","125","135"], answer: 2 },
+    { q: "Analogy — 3 : 27 :: 4 : __?", options: ["48","64","16","32"], answer: 1 },
+    { q: "Analogy — 4 : 64 :: 5 : __?", options: ["100","115","125","135"], answer: 2 },
     { q: "Analogy — Doctor : Hospital :: Teacher : __?", options: ["Office","School","Library","Class"], answer: 1 },
     { q: "Analogy — Painter : Brush :: Writer : __?", options: ["Paper","Pen","Ink","Book"], answer: 1 },
     { q: "Analogy — Bird : Nest :: Human : __?", options: ["Office","Car","House","Garden"], answer: 2 },
@@ -54,8 +82,8 @@ const COMMON = {
     { q: "Odd one out: Cricket, Football, Chess, Hockey, Tennis", options: ["Cricket","Football","Chess","Hockey"], answer: 2 },
     { q: "Odd one out (not prime): 3, 5, 7, 9, 11", options: ["3","5","9","11"], answer: 2 },
     { q: "Odd one out: Rose, Lotus, Jasmine, Mango, Marigold", options: ["Rose","Lotus","Mango","Marigold"], answer: 2 },
-    { q: "Coding: MANGO → NBOHP (+1 each). APPLE = ?", options: ["BQQMF","BPQMF","BQQNF","BQQLF"], answer: 0 },
-    { q: "If RED = 27 (R+E+D=18+5+4), what is BLUE (B+L+U+E)?", options: ["36","38","40","42"], answer: 2 },
+    { q: "Coding: MANGO → NBOHP. APPLE = ?", options: ["BQQMF","BPQMF","BQQNF","BQQLF"], answer: 0 },
+    { q: "If RED = 27, what is BLUE?", options: ["36","38","40","42"], answer: 2 },
     { q: "Direction: Walks 10m North, turns right 5m, turns right 10m. Facing?", options: ["North","East","South","West"], answer: 2 },
     { q: "Sita walks 3km East then 4km North. Shortest distance from start?", options: ["3 km","4 km","5 km","7 km"], answer: 2 },
     { q: "A walks South 5m, left 3m, left 5m. Now facing?", options: ["North","South","East","West"], answer: 0 },
@@ -68,12 +96,52 @@ const COMMON = {
   ],
 
   numerical: [
-    /* Example Question with an Image placeholder for Data Representation */
+    /* Drawn Data Representation Example 1 (Custom Line Graph) */
     { 
-      q: "Review the quarterly performance graph below. Which operational period demonstrated the steepest upward trend in net profit?", 
-      options: ["Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4"], 
-      answer: 2,
-      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=600&auto=format&fit=crop" // Replace with your real graph/chart link
+      q: "Data Representation: Analyze the room performance metrics chart drawn below. Between which two operational quarters did the hotel register the highest net increase in overall Occupancy %?", 
+      options: ["Q1 to Q2", "Q2 to Q3", "Q3 to Q4", "The occupancy performance remained completely stagnant"], 
+      answer: 1,
+      draw: () => (
+        <svg viewBox="0 0 450 180" style={{ width: "100%", maxWidth: "450px", background: "#111723", padding: "15px", borderRadius: "4px", border: "1px solid #1e2638" }}>
+          {/* Grid lines */}
+          <line x1="40" y1="20" x2="420" y2="20" stroke="#1e2638" strokeWidth="1" />
+          <line x1="40" y1="60" x2="420" y2="60" stroke="#1e2638" strokeWidth="1" />
+          <line x1="40" y1="100" x2="420" y2="100" stroke="#1e2638" strokeWidth="1" />
+          <line x1="40" y1="140" x2="420" y2="140" stroke="#1e2638" strokeWidth="1" />
+          
+          {/* Y Axis Labels */}
+          <text x="10" y="25" fill="#7e8a9f" fontSize="10">80%</text>
+          <text x="10" y="65" fill="#7e8a9f" fontSize="10">60%</text>
+          <text x="10" y="105" fill="#7e8a9f" fontSize="10">40%</text>
+          <text x="10" y="145" fill="#7e8a9f" fontSize="10">20%</text>
+
+          {/* Graph Axis */}
+          <line x1="40" y1="10" x2="40" y2="150" stroke="#7e8a9f" strokeWidth="1.5" />
+          <line x1="40" y1="150" x2="430" y2="150" stroke="#7e8a9f" strokeWidth="1.5" />
+
+          {/* Graph Plots / Trend Line (Q1: 45%, Q2: 50%, Q3: 75%, Q4: 70%) */}
+          {/* Calculated coordinates: Q1=70,110 | Q2=170,100 | Q3=270,30 | Q4=370,40 */}
+          <path d="M 70 110 L 170 100 L 270 30 L 370 40" fill="none" stroke="#c9a84c" strokeWidth="3" />
+          
+          {/* Node points */}
+          <circle cx="70" cy="110" r="4" fill="#dfc475" />
+          <circle cx="170" cy="100" r="4" fill="#dfc475" />
+          <circle cx="270" cy="30" r="4" fill="#dfc475" />
+          <circle cx="370" cy="40" r="4" fill="#dfc475" />
+
+          {/* Node labels */}
+          <text x="65" y="125" fill="#d1d7e0" fontSize="11" fontWeight="bold">45%</text>
+          <text x="165" y="115" fill="#d1d7e0" fontSize="11" fontWeight="bold">50%</text>
+          <text x="265" y="20" fill="#dfc475" fontSize="11" fontWeight="bold">75%</text>
+          <text x="365" y="30" fill="#d1d7e0" fontSize="11" fontWeight="bold">70%</text>
+
+          {/* X Axis Labels */}
+          <text x="60" y="168" fill="#7e8a9f" fontSize="11">Quarter 1</text>
+          <text x="160" y="168" fill="#7e8a9f" fontSize="11">Quarter 2</text>
+          <text x="260" y="168" fill="#7e8a9f" fontSize="11">Quarter 3</text>
+          <text x="360" y="168" fill="#7e8a9f" fontSize="11">Quarter 4</text>
+        </svg>
+      )
     },
     { q: "A is twice B's age. 10 yrs ago A was 3× B's age. A's current age?", options: ["30","35","40","45"], answer: 2 },
     { q: "Ratio of ages P:Q = 3:5. After 6 yrs = 2:3. P's current age?", options: ["12","15","18","21"], answer: 2 },
@@ -383,8 +451,7 @@ const css = `
   .tmr.warn { color:#e85c4c !important }
   .tmr.dng { color:#e85c4c !important; animation: blink 1s infinite }
   @keyframes blink { 50% { opacity: 0.5 } }
-  .qimg-box { width:100%; max-width:480px; margin:16px 0; border-radius:4px; overflow:hidden; border:1px solid ${G.border}; background:#000; }
-  .qimg { width:100%; height:auto; display:block; object-fit:contain; }
+  .drawing-container { margin: 16px 0; width: 100%; display: flex; justify-content: flex-start; }
 `;
 
 export default function AssessmentSystem() {
@@ -396,12 +463,11 @@ export default function AssessmentSystem() {
   const [sections, setSections] = useState([]);
   const [si, setSi] = useState(0);
   const [qi, setQi] = useState(0);
-  const [ans, setAns] = useState([]); // Array of arrays matching sections layout
+  const [ans, setAns] = useState([]); 
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
 
   const timerRef = useRef(null);
 
-  // Read configurations from localStorage profile context dynamically
   const attemptInfo = name.trim() ? getAttemptData(name) : null;
   const attemptsUsed = attemptInfo ? attemptInfo.count : 0;
   const attemptsLeft = Math.max(0, MAX_ATTEMPTS - attemptsUsed);
@@ -448,7 +514,6 @@ export default function AssessmentSystem() {
   };
 
   const autoSubmit = () => {
-    // Triggers when runtime drops to absolute zero
     handleCompleteSubmit(true);
   };
 
@@ -459,14 +524,12 @@ export default function AssessmentSystem() {
   const handleCompleteSubmit = async (wasAuto) => {
     clearInterval(timerRef.current);
     
-    // 1. Calculations
     const totalScore = calcScore(sections, ans);
     const isPassed = totalScore >= PASS_MARK;
     saveAttempt(name, totalScore, isPassed);
 
     setPhase("results");
 
-    // 2. Format transactional summaries for Formspree email payload
     const sectionBreakdown = sections.map((sec, idx) => {
       const correct = sec.questions.filter((q, qidx) => ans[idx]?.[qidx] === q.answer).length;
       return `• ${sec.name}: ${correct} / ${sec.questions.length}`;
@@ -484,7 +547,6 @@ export default function AssessmentSystem() {
       Section_Performance: "\n" + sectionBreakdown
     };
 
-    // 3. Post to Email Formspree Endpoint directly
     try {
       await fetch("https://formspree.io/f/mgobvpee", {
         method: "POST",
@@ -492,7 +554,7 @@ export default function AssessmentSystem() {
         body: JSON.stringify(emailPayload),
       });
     } catch (e) {
-      console.error("Transmission to Formspree fallback network error:", e);
+      console.error("Transmission error:", e);
     }
   };
 
@@ -537,7 +599,6 @@ export default function AssessmentSystem() {
               • Navigate freely across all sections. Auto-submits when time runs out.
             </div>
 
-            {/* Full Name */}
             <label style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", display:"block", marginBottom:6 }}>Full Name</label>
             <input 
               type="text" 
@@ -547,7 +608,6 @@ export default function AssessmentSystem() {
               onKeyDown={e => e.key==="Enter" && handleStart()}
             />
 
-            {/* Attempt indicator */}
             {attemptInfo && name.trim() && (
               <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <span style={{ fontSize:11, color:G.muted }}>Attempts used:</span>
@@ -560,7 +620,6 @@ export default function AssessmentSystem() {
               </div>
             )}
 
-            {/* Department */}
             <label style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", display:"block", marginBottom:6, marginTop:14 }}>Department</label>
             <select value={dept} onChange={e => { setDept(e.target.value); setErr(""); }}>
               <option value="">-- Select your department --</option>
@@ -639,30 +698,23 @@ export default function AssessmentSystem() {
             </button>
           </div>
 
-          {/* Progress fill line bar */}
           <div style={{ padding:"5px 20px", background:G.card, borderBottom:`1px solid ${G.border}` }}>
             <div className="pbar"><div className="pfill" style={{ width:`${(totalAns/TOTAL_QUESTIONS_CALC)*100}%` }} /></div>
           </div>
 
-          {/* Layout split wrapper block */}
           <div style={{ flex:1, display:"flex", flexWrap:"wrap" }}>
-            {/* Left Main Question Form Sheet */}
+            {/* Left Question Body */}
             <div style={{ flex:"1 1 500px", padding:32, borderRight:`1px solid ${G.border}` }}>
               <div className="card fi" key={`${si}-${qi}`} style={{ padding:28 }}>
                 <span style={{ fontSize:10, color:G.gold, letterSpacing:1.5, textTransform:"uppercase", fontWeight:600 }}>{sec.name}</span>
                 <p style={{ fontSize:16, marginTop:8, color:G.text, lineHeight:1.6, fontWeight:400 }}>{q.q}</p>
 
-                {/* --- IMAGE / FIGURE SUPPORT CONTAINER --- */}
-                {q.image && (
-                  <div className="qimg-box">
-                    <img 
-                      src={q.image} 
-                      alt="Question attachment illustration" 
-                      className="qimg"
-                    />
+                {/* ── SEAMLESS VECTOR DRAWING SUPPORT ── */}
+                {q.draw && (
+                  <div className="drawing-container">
+                    {q.draw()}
                   </div>
                 )}
-                {/* --- END IMAGE SUPPORT --- */}
 
                 <div style={{ marginTop:24, display:"flex", flexDirection:"column", gap:10 }}>
                   {q.options.map((opt, oi) => {
@@ -677,14 +729,13 @@ export default function AssessmentSystem() {
                 </div>
               </div>
 
-              {/* Action Buttons footer */}
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:20 }}>
                 <button className="btn-outline" onClick={prev} disabled={si===0 && qi===0}>Previous</button>
                 <button className="btn-gold" style={{ padding:"10px 28px" }} onClick={next} disabled={si===sections.length-1 && qi===sec.questions.length-1}>Next</button>
               </div>
             </div>
 
-            {/* Right Map Navigation Grid Sidebar */}
+            {/* Right Map Navigation */}
             <div style={{ width:280, padding:24, background:`linear-gradient(to bottom, ${G.card}, ${G.bg})` }}>
               <div style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:12, fontWeight:600 }}>Section Outline Map</div>
               <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -737,7 +788,6 @@ export default function AssessmentSystem() {
     const passed = totalScore >= PASS_MARK;
     const pct = Math.round((totalScore / TOTAL_QUESTIONS_CALC) * 100);
     const attLeft = Math.max(0, MAX_ATTEMPTS - (attemptInfo ? attemptInfo.count : 0));
-    
     const deptLabel = DEPARTMENTS.find(d => d.id === dept)?.label || "";
 
     return (
@@ -766,11 +816,11 @@ export default function AssessmentSystem() {
               
               <div style={{ display:"flex", justifyContent:"center", gap:40, margin:"10px 0" }}>
                 <div>
-                  <div style={{ fontSize:36, fontWeight:700, color:passed?G.gold:"#e85c4c", fontFamily:"sans-serif" }}>{totalScore}</div>
+                  <div style={{ fontSize:36, fontWeight:700, color:passed?G.gold:"#e85c4c" }}>{totalScore}</div>
                   <div style={{ fontSize:10, color:G.muted, letterSpacing:1, marginTop:2 }}>TOTAL SCORE</div>
                 </div>
                 <div>
-                  <div style={{ fontSize:36, fontWeight:700, color:G.text, fontFamily:"sans-serif" }}>{pct}%</div>
+                  <div style={{ fontSize:36, fontWeight:700, color:G.text }}>{pct}%</div>
                   <div style={{ fontSize:10, color:G.muted, letterSpacing:1, marginTop:2 }}>PERCENTAGE</div>
                 </div>
               </div>
@@ -798,7 +848,7 @@ export default function AssessmentSystem() {
             </div>
 
             <div style={{ textAlign:"center", marginTop:20, fontSize:12, color:G.muted, lineHeight:1.6 }}>
-              Your full grading breakdown metric has been cleanly dispatched to the review desk via fallback tracking relays. <br/>
+              Your full grading breakdown metric has been cleanly dispatched to the review desk via fallback tracking relays.<br/>
               {attLeft > 0 ? (
                 <span>You have <strong style={{ color:G.gold }}>{attLeft}</strong> profile authentications left in your reservation queue.</span>
               ) : (
