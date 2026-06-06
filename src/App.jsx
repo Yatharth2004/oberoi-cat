@@ -12,7 +12,7 @@ const DEPARTMENTS = [
   { id: "kitchen",       label: "Kitchen" },
   { id: "finance",       label: "Finance" },
   { id: "engineering",   label: "Engineering" },
-  { id: "spa_recreation", label: "Spa & Recreation" }, // Fixed ID string typo
+  { id: "spa_recreation", label: "Spa & Recreation" },
 ];
  
 const SECTION_META = [
@@ -25,7 +25,7 @@ const SECTION_META = [
  
 const TOTAL_QUESTIONS = SECTION_META.reduce((s, m) => s + m.count, 0);
  
-// ── COMMON QUESTION POOLS (all departments) ───────────────────────────────────
+// ── COMMON QUESTION POOLS ─────────────────────────────────────────────────────
 const COMMON = {
   abstract: [
     { q: "Series: 2, 4, 8, 16, __?", options: ["24","32","30","36"], answer: 1 },
@@ -66,6 +66,10 @@ const COMMON = {
     { q: "Some managers are leaders. All leaders are motivators. Some managers are motivators?", options: ["Definitely True","Definitely False","Cannot be determined","Partially True"], answer: 0 },
     { q: "In a matrix: Row1: 2,4,6 | Row2: 3,6,9 | Row3: 4,8,__?", options: ["10","11","12","14"], answer: 2 },
     { q: "If P is Q's mother and Q is R's sister, what is P to R?", options: ["Grandmother","Aunt","Mother","Sister"], answer: 2 },
+    // ADDED: Non-Verbal Pattern Reasoning Matrix Questions
+    { q: "Pattern Reasoning: A square has 1 dot inside, a triangle has 2 dots inside, a circle has 3 dots inside. What layout configuration describes the next natural logical step?", options: ["A line with 4 dots","A hexagon with 1 dot","A rectangle with 4 dots inside","An empty oval shape"], answer: 2 },
+    { q: "Matrix Rotation: An arrow points North. First step: turns East (90° clockwise). Second step: points South (90° clockwise). Where does it point on the fourth step?", options: ["North","East","South","West"], answer: 3 },
+    { q: "Symmetry Transformation: A matrix grid slice displays shaded blocks shifting from Top-Left to Top-Right, then Bottom-Right. Where will the shaded block rest next?", options: ["Top-Left","Bottom-Left","Center-Core","Remains unchanged"], answer: 1 }
   ],
  
   numerical: [
@@ -84,6 +88,9 @@ const COMMON = {
     { q: "Bought ₹800, sold ₹1,000. Profit %?", options: ["20%","22%","25%","30%"], answer: 2 },
     { q: "Simple interest: ₹5,000 at 8% p.a. for 3 years?", options: ["₹1,000","₹1,100","₹1,200","₹1,500"], answer: 2 },
     { q: "NPS = Promoters% − Detractors%. Promoters 45%, Detractors 15%. NPS?", options: ["25","30","35","40"], answer: 1 },
+    // ADDED: Data Representation / Interpretation Questions
+    { q: "Data Representation: A bar chart shows Department Guest Metrics: Q1 = 400, Q2 = 450, Q3 = 500, Q4 = 650. What is the total incremental gain in guest arrivals between Q1 and Q4?", options: ["150 guests","200 guests","250 guests","300 guests"], answer: 2 },
+    { q: "Data Interpretation: A pie chart shows total expense allocations (Linen: 40%, Amenities: 25%, Uniforms: 20%, Sundries: 15%). If total spending equals ₹2,00,000, how much money was spent on Amenities?", options: ["₹40,000","₹50,000","₹60,000","₹30,000"], answer: 1 }
   ],
  
   verbal: [
@@ -114,7 +121,7 @@ const COMMON = {
     { q: "Fill in: The hotel prides itself on _____ service standards.", options: ["Mediocre","Impeccable","Ordinary","Average"], answer: 1 },
     { q: "Word meaning 'generous and friendly welcome':", options: ["Hostility","Hospitality","Frugality","Formality"], answer: 1 },
     { q: "Analogy — Knife : Sharp :: Pillow : __?", options: ["Hard","Rough","Soft","Flat"], answer: 2 },
-    { q: "Fill in: Supervisors must _____ clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
+    { q: "Fill in: Supervisors must _____ communicate clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
   ],
  
   company: [
@@ -288,7 +295,7 @@ const DEPT_Q = {
       { q: "Revenue ₹10L, COGS ₹6L. Gross profit %?", options: ["30%","35%","40%","45%"], answer: 2 },
       { q: "TDS 10% on professional service ₹80,000. Net payment after TDS?", options: ["₹68,000","₹70,000","₹72,000","₹75,000"], answer: 2 },
       { q: "Loan ₹10L at 12% p.a. Annual interest?", options: ["₹1,00,000","₹1,10,000","₹1,20,000","₹1,30,000"], answer: 2 },
-      { q: "Occupancy revenue ₹40L + F&B revenue ₹20L. Total revenue variance if budget was ₹55L?", options: ["5%","7.5%","9.1%財","11.1%"], answer: 3 },
+      { q: "Occupancy revenue ₹40L + F&B revenue ₹20L. Total revenue variance if budget was ₹55L?", options: ["5%","7.5%","9.1%","11.1%"], answer: 3 },
     ],
     awareness: [
       { q: "P&L Statement stands for:", options: ["Productivity & Labor","Profit and Loss","Performance & Liability","Pricing & Licensing"], answer: 1 },
@@ -333,7 +340,7 @@ const DEPT_Q = {
     ],
   },
  
-  spa_recreation: { // Formatted matching ID
+  spa_recreation: {
     numerical: [
       { q: "Massage priced ₹4,000 + 18% GST. Final bill?", options: ["₹4,500","₹4,600","₹4,720","₹4,800"], answer: 2 },
       { q: "Spa room takes 15 mins to reset. Time for 8 resets (hours)?", options: ["1.5","2","2.5","3"], answer: 1 },
@@ -406,22 +413,20 @@ const css = `
 `;
  
 export default function App() {
-  const [phase, setPhase] = useState("landing"); // landing, setup, lobby, exam, results, admin
+  const [phase, setPhase] = useState("landing");
   const [name, setName] = useState("");
   const [deptId, setDeptId] = useState("frontoffice");
   const [attempt, setAttempt] = useState(1);
-  const [secAnswers, setSecAnswers] = useState({}); // { secIndex: { qIndex: optIndex } }
+  const [secAnswers, setSecAnswers] = useState({});
   const [currentSec, setCurrentSec] = useState(0);
   const [currentQ, setCurrentQ] = useState(0);
   const [secTimeLeft, setSecTimeLeft] = useState(0);
   const [finalAnswers, setFinalAnswers] = useState(null);
   const [savedAt, setSavedAt] = useState("");
-  const [showAdminGate, setShowAdminGate] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading interaction toggle state
+  const [isSubmitting, setIsSubmitting] = useState(false);
  
   const timerRef = useRef(null);
  
-  // Generate question pool dynamically for the user session
   const getQuestionsForSection = useCallback((secId) => {
     const meta = SECTION_META.find(m => m.id === secId);
     if (!meta) return [];
@@ -429,7 +434,6 @@ export default function App() {
     const deptPool = DEPT_Q[deptId]?.[secId] || [];
     const combined = [...commonPool, ...deptPool];
     
-    // Deterministic selection based on candidate parameters
     const seed = name.length + deptId.charCodeAt(0) + (attempt * 7);
     const selected = [];
     const poolCopy = [...combined];
@@ -442,7 +446,6 @@ export default function App() {
     return selected;
   }, [deptId, name, attempt]);
  
-  // Cache generated questions for current active exam session
   const [SECTIONS, setSECTIONS] = useState([]);
  
   const startExamFlow = () => {
@@ -469,7 +472,6 @@ export default function App() {
     return score;
   };
  
-  // Handle moving sections or ending the assessment setup cleanly
   const advanceSection = useCallback((answersData) => {
     if (currentSec < SECTIONS.length - 1) {
       const next = currentSec + 1;
@@ -481,7 +483,6 @@ export default function App() {
     }
   }, [currentSec, SECTIONS]);
  
-  // Countdown execution hook
   useEffect(() => {
     if (phase !== "exam") return;
     timerRef.current = setInterval(() => {
@@ -503,16 +504,16 @@ export default function App() {
     const ts = new Date().toLocaleString("en-IN");
     setSavedAt(ts);
     setFinalAnswers(answers);
-
+ 
     const sectionBreakdown = SECTIONS.map((sec, si) => {
       const correct = sec.questions.filter((q, qi) => answers[si]?.[qi] === q.answer).length;
       return `• ${sec.name}: ${correct} / ${sec.questions.length}`;
     }).join("\n");
-
+ 
     const percentage = Math.round((score / TOTAL_QUESTIONS) * 100);
     const statusText = score >= PASS_MARK ? "PASSED ✅" : "FAILED ❌";
     const deptLabel = DEPARTMENTS.find(d => d.id === deptId)?.label || deptId;
-
+ 
     const emailPayload = {
       Candidate_Name: name,
       Department: deptLabel,
@@ -522,29 +523,25 @@ export default function App() {
       Submitted_At: ts,
       Section_Performance: "\n" + sectionBreakdown
     };
-
-    // OPTIMIZATION: Send the data in the background without making the candidate wait
+ 
     try {
-      // 1. Fire and forget to Google Sheets
       fetch(SHEETS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, dept: deptId, attempt, score, max: TOTAL_QUESTIONS, pct: percentage, status: score >= PASS_MARK ? "PASS" : "FAIL" })
       }).catch(e => console.error("Sheets background error:", e));
-
-      // 2. Fire and forget to Formspree
+ 
       fetch("https://formspree.io/f/mgobvpee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(emailPayload)
       }).catch(e => console.error("Formspree background error:", e));
-
+ 
     } catch (e) {
       console.error("Transmission setup log error:", e);
     }
-
-    // 3. Move INSTANTLY to the results screen so the candidate sees their score right away
+ 
     setIsSubmitting(false);
     setPhase("results");
   }
@@ -559,7 +556,7 @@ export default function App() {
         <div className="container" style={{ textAlign: "center", padding: "48px 32px" }}>
           <div style={{ fontSize: 42, marginBottom: 12 }}>✨</div>
           <h1>Oberoi CAT Exam</h1>
-          <p className="subtitle">Cognitive Assessment Test for Trainees & Interns</p>
+          <p className="subtitle">Cognitive Assessment Test for SDP Candidates</p>
           <div style={{ background: "var(--bg)", borderRadius: 8, padding: 20, border: "1px solid var(--border)", textAlign: "left", marginBottom: 28, fontSize: 14, color: "var(--muted)", lineHeight: 1.5 }}>
             <strong style={{ color: "var(--text)", display: "block", marginBottom: 6 }}>Exam Instructions:</strong>
             • The test consists of 5 timed sections containing a total of {TOTAL_QUESTIONS} questions.<br/>
@@ -607,9 +604,9 @@ export default function App() {
           <p className="subtitle">Verify the timeline structures before initializing token</p>
           
           <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 20, marginBottom: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyBetween: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Candidate Name:</span><strong>{name}</strong></div>
-            <div style={{ display: "flex", justifyBetween: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Core Track:</span><strong>{deptLabel}</strong></div>
-            <div style={{ display: "flex", justifyBetween: "space-between", paddingBottom: 4 }}><span style={{ color: "var(--muted)" }}>Execution Level:</span><strong>Attempt Allocation {attempt}</strong></div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Candidate Name:</span><strong>{name}</strong></div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Core Track:</span><strong>{deptLabel}</strong></div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: 4 }}><span style={{ color: "var(--muted)" }}>SDP Track:</span><strong>Attempt Allocation {attempt}</strong></div>
           </div>
  
           <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--muted)", marginBottom: 12 }}>Assessment Breakdown Map</h2>
