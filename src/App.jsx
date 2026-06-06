@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
  
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwkblh0vj6_I66dAzORjF6CS1kn53b8JQcmsnsH5adF9dR9B-_z8tz9yb-KNLKBHgFD/exec";
 const MAX_ATTEMPTS = 3;
 const PASS_MARK = 35;
 const EXAM_DURATION = 90 * 60;
@@ -30,15 +29,12 @@ const COMMON = {
   abstract: [
     { q: "Series: 2, 4, 8, 16, __?", options: ["24","32","30","36"], answer: 1 },
     { q: "Series: 1, 4, 9, 16, 25, __?", options: ["30","35","36","49"], answer: 2 },
-    
-    // 🧩 Example 1: Non-Verbal Pattern Reasoning Question with Image Diagram
     { 
       q: "Which of the options completes the non-verbal visual sequence pattern shown below?", 
-      img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80", // Replace with actual non-verbal pattern or shape URL
+      img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80", 
       options: ["Pattern A", "Pattern B", "Pattern C", "Pattern D"], 
       answer: 1 
     },
-    
     { q: "Series: 100, 96, 89, 79, 66, __?", options: ["50","53","49","55"], answer: 0 },
     { q: "Fibonacci — 1, 1, 2, 3, 5, 8, 13, __?", options: ["18","20","21","26"], answer: 2 },
     { q: "Series: 2, 6, 12, 20, 30, __?", options: ["40","42","44","48"], answer: 1 },
@@ -78,10 +74,9 @@ const COMMON = {
   ],
  
   numerical: [
-    // 📊 Example 2: Data Representation Question with Chart/Graph Image
     {
       q: "Examine the quarterly hotel operational performance report chart below. Which tracking month observed the sharpest drop in overall room revenue margins?",
-      img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80", // Replace with actual analytics graph/table URL
+      img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80", 
       options: ["January", "March", "June", "August"],
       answer: 1
     },
@@ -130,12 +125,12 @@ const COMMON = {
     { q: "Fill in: The hotel prides itself on _____ service standards.", options: ["Mediocre","Impeccable","Ordinary","Average"], answer: 1 },
     { q: "Word meaning 'generous and friendly welcome':", options: ["Hostility","Hospitality","Frugality","Formality"], answer: 1 },
     { q: "Analogy — Knife : Sharp :: Pillow : __?", options: ["Hard","Rough","Soft","Flat"], answer: 2 },
-    { q: "Fill in: Supervisors must _____ clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
+    { q: "Fill in: Supervisors must _____ communicate clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
   ],
  
   company: [
     { q: "In which year was The Oberoi Group founded?", options: ["1930","1932","1934","1938"], answer: 2 },
-    { q: "Where was Rai Bahadur M.S. Oberoi born?", options: ["Delhi","Shimla","Undivided Punjab (now Pakistan)","LAhore"], answer: 2 },
+    { q: "Where was Rai Bahadur M.S. Oberoi born?", options: ["Delhi","Shimla","Undivided Punjab (now Pakistan)","Lahore"], answer: 2 },
     { q: "First hotel acquired by Mr. M.S. Oberoi?", options: ["Grand Hotel Calcutta","Cecil Hotel Shimla","Clarkes Hotel Shimla","Maidens Hotel Delhi"], answer: 2 },
     { q: "Title conferred on Mr. M.S. Oberoi by British Government in 1943?", options: ["Padma Bhushan","Rai Bahadur","Padma Vibhushan","Padma Shri"], answer: 1 },
     { q: "The Oberoi Inter Continental, New Delhi opened in:", options: ["1960","1963","1965","1968"], answer: 2 },
@@ -388,7 +383,6 @@ function getSectionQuestions(deptId, secId) {
     pool = [...pool, ...DEPT_Q[deptId][secId]];
   }
  
-  // Deterministic sample based on index patterns
   const subset = [];
   for (let i = 0; i < meta.count; i++) {
     const idx = (i * 7) % pool.length;
@@ -411,7 +405,7 @@ const G = {
   cardBg: "#ffffff",
   text: "#292724",
   muted: "#7c756e",
-  accent: "#8c764d", // Luxury Soft Gold Accent
+  accent: "#8c764d",
   border: "#eae6df",
   lightBg: "#f5f3ef",
   success: "#4a6b53",
@@ -446,25 +440,12 @@ function Landing({ onStart }) {
   const [name, setName] = useState("");
   const [dept, setDept] = useState("");
   const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
  
-  async function checkEligibility() {
+  function handleAuthenticate() {
     if (!name.trim()) return setErr("Please state your candidate name profile configuration.");
     if (!dept) return setErr("Please specify your target specialized department loop mapping.");
     setErr("");
-    setLoading(true);
- 
-    try {
-      const res = await fetch(`${SHEETS_URL}?action=checkEligibility&name=${encodeURIComponent(name.trim())}`);
-      const data = await res.json();
-      if (data.status === "allowed") {
-        onStart(name.trim(), dept);
-      } else {
-        setErr(data.message || "Maximum systemic attempts exhausted. Access restricted configuration.");
-      }
-    } catch (e) {
-      setErr("Connectivity verification failed. Please verify network routing configuration.");
-    } finally { setLoading(false); }
+    onStart(name.trim(), dept);
   }
  
   return (
@@ -477,19 +458,19 @@ function Landing({ onStart }) {
         
         <div style={{ textAlign: "left", marginBottom: 20 }}>
           <label style={{ fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Full Name</label>
-          <input className="input-field" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter full candidate identity details..." disabled={loading} />
+          <input className="input-field" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Enter full candidate identity details..." />
         </div>
  
         <div style={{ textAlign: "left", marginBottom: 32 }}>
           <label style={{ fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Department Selection</label>
-          <select className="input-field" value={dept} onChange={e => setDept(e.target.value)} disabled={loading} style={{ background: "white" }}>
+          <select className="input-field" value={dept} onChange={e => setDept(e.target.value)} style={{ background: "white" }}>
             <option value="">-- Choose Assigned Department Track --</option>
             {DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
         </div>
  
-        <button className="btn" style={{ width: "100%" }} onClick={checkEligibility} disabled={loading}>
-          {loading ? "Verifying Token..." : "Authenticate & Authenticate Session"}
+        <button className="btn" style={{ width: "100%" }} onClick={handleAuthenticate}>
+          Authenticate & Start Session
         </button>
       </div>
     </div>
@@ -551,7 +532,6 @@ function Exam({ name, deptId, onSubmit }) {
     }));
   }
  
-  // Global mapping logic counters
   let cumulativeQuestionIndex = 1;
   for (let s = 0; s < secIdx; s++) {
     cumulativeQuestionIndex += sections[s].questions.length;
@@ -560,7 +540,6 @@ function Exam({ name, deptId, onSubmit }) {
  
   return (
     <div style={{ maxWidth: 840, margin: "40px auto", padding: 16 }}>
-      {/* Upper Status Panel */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, background: "white", padding: "16px 24px", borderRadius: 8, border: `1px solid ${G.border}` }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: "600", color: G.accent }}>{currentSection.name}</div>
@@ -572,24 +551,21 @@ function Exam({ name, deptId, onSubmit }) {
         </div>
       </div>
  
-      {/* Exam Core Window Workspace */}
       <div className="card" style={{ minHeight: 400, position: "relative", paddingBottom: 100 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: G.muted, borderBottom: `1px solid ${G.border}`, paddingBottom: 12, marginBottom: 24 }}>
           <span style={{ fontWeight: "600", textTransform: "uppercase" }}>Question {cumulativeQuestionIndex} of {TOTAL_QUESTIONS}</span>
           <span>Section Track: {secIdx + 1}/{sections.length}</span>
         </div>
  
-        {/* Core Question Layout Text */}
         <div style={{ fontSize: 17, fontWeight: "500", lineHeight: "1.6", marginBottom: 20 }}>
           {currentQuestion.q}
         </div>
  
-        {/* 🖼️ Dynamic Diagram & Pattern Graph Handler Wrapper Block */}
         {currentQuestion.img && (
           <div className="question-diagram-container" style={{ margin: "20px 0", textAlign: "center", background: G.lightBg, padding: 16, borderRadius: 6, border: `1px solid ${G.border}` }}>
             <img 
               src={currentQuestion.img} 
-              alt="Visual exam reference diagram pattern illustration data matrix" 
+              alt="Visual reference exam item pattern asset layout" 
               style={{ 
                 maxWidth: "100%", 
                 maxHeight: "300px", 
@@ -601,7 +577,6 @@ function Exam({ name, deptId, onSubmit }) {
           </div>
         )}
  
-        {/* Radio Mapping Form Controls */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginTop: 16 }}>
           {currentQuestion.options.map((opt, idx) => {
             const isChecked = answers[secIdx]?.[qIdx] === idx;
@@ -618,7 +593,6 @@ function Exam({ name, deptId, onSubmit }) {
           })}
         </div>
  
-        {/* Bottom Panel Step Mechanics */}
         <div style={{ position: "absolute", bottom: 32, left: 32, right: 32, display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${G.border}`, paddingTop: 20 }}>
           <button className="btn" style={{ background: G.lightBg, color: G.text, border: `1px solid ${G.border}` }} onClick={() => setQIdx(prev => Math.max(0, prev - 1))} disabled={qIdx === 0}>
             Previous Layout
@@ -656,100 +630,12 @@ function Results({ name }) {
   );
 }
  
-function AdminGate({ onAccess, onCancel }) {
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState("");
-  function check() {
-    if (pass === "OberoiL&D2026") onAccess();
-    else setErr("System credentials mismatch configured verification signatures.");
-  }
-  return (
-    <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(41,39,36,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div className="card" style={{ width: 360, padding: 24 }}>
-        <div style={{ fontSize: 16, fontWeight: "600", marginBottom: 16 }}>Authorization Required</div>
-        {err && <div style={{ color: G.error, fontSize: 12, marginBottom: 12 }}>{err}</div>}
-        <input className="input-field" type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Security access phrase key..." style={{ marginBottom: 16 }} onKeyDown={e => e.key === "Enter" && check()} />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <button className="btn" style={{ background: "transparent", color: G.muted }} onClick={onCancel}>Abort</button>
-          <button className="btn" onClick={check}>Unlock</button>
-        </div>
-      </div>
-    </div>
-  );
-}
- 
-function AdminDashboard({ onBack }) {
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
- 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`${SHEETS_URL}?action=getResults`);
-        const data = await res.json();
-        setResults(data);
-      } catch (e) { console.error("Admin data synchronization payload failure:", e); }
-      finally { setLoading(false); }
-    }
-    load();
-  }, []);
- 
-  return (
-    <div style={{ padding: 40, maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: "600", color: G.accent }}>L&D Metrics Management Ledger Portal</div>
-          <div style={{ fontSize: 13, color: G.muted }}>Operational Candidate Evaluation Performance Tracking</div>
-        </div>
-        <button className="btn" style={{ background: G.lightBg, color: G.text, border: `1px solid ${G.border}` }} onClick={onBack}>Exit Portal space</button>
-      </div>
- 
-      {loading ? <div style={{ color: G.muted, fontSize: 14 }}>Synchronizing live secure storage parameters...</div> : (
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-            <thead>
-              <tr style={{ background: G.lightBg, borderBottom: `1px solid ${G.border}` }}>
-                <th style={{ padding: "14px 20px", fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Candidate Profile</th>
-                <th style={{ padding: "14px 20px", fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Department Loop</th>
-                <th style={{ padding: "14px 20px", fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Total Score</th>
-                <th style={{ padding: "14px 20px", fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>System Verdict Status</th>
-                <th style={{ padding: "14px 20px", fontSize: 12, fontWeight: "600", color: G.muted, textTransform: "uppercase" }}>Timestamp Ledger</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.length === 0 ? (
-                <tr><td colSpan="5" style={{ padding: 24, textCenter: "center", color: G.muted, fontSize: 14 }}>No evaluation log records saved inside remote persistence.</td></tr>
-              ) : results.map((r, i) => {
-                const passed = parseInt(r.score) >= PASS_MARK;
-                return (
-                  <tr key={i} style={{ borderBottom: `1px solid ${G.border}` }}>
-                    <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: "500" }}>{r.name}</td>
-                    <td style={{ padding: "16px 20px", fontSize: 14, color: G.muted }}>{DEPARTMENTS.find(d => d.id === r.department)?.label || r.department}</td>
-                    <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: "600" }}>{r.score} / {TOTAL_QUESTIONS}</td>
-                    <td style={{ padding: "16px 20px", fontSize: 13 }}>
-                      <span style={{ padding: "4px 8px", borderRadius: 4, background: passed ? "#eef7f0" : "#fdf3f3", color: passed ? G.success : G.error, fontWeight: "500" }}>
-                        {passed ? "PASSED ✅" : "FAILED ❌"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 20px", fontSize: 13, color: G.muted }}>{r.timestamp}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
- 
 // ── MAIN CORE ENTRY CONTAINER COMPONENT ──────────────────────────────────────
 export default function App() {
   const [phase, setPhase] = useState("landing");
   const [name, setName] = useState("");
   const [deptId, setDeptId] = useState("");
   const [savedAt, setSavedAt] = useState("");
-  const [showAdminGate, setShowAdminGate] = useState(false);
   const [finalAnswers, setFinalAnswers] = useState({});
  
   function calcScore(allAnswers) {
@@ -795,17 +681,7 @@ export default function App() {
       Section_Performance: "\n" + sectionBreakdown
     };
  
-    // Forward transaction logs to Sheet database configuration
-    try {
-      await fetch(SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "saveResult", name, department: deptId, score, timestamp: ts, answers })
-      });
-    } catch (e) { console.error("Database persistence routing issue:", e); }
- 
-    // Send form payload metadata records directly to tracking endpoint
+    // Send form payload score summaries directly to the Formspree tracking stream
     try {
       await fetch("https://formspree.io/f/mgobvpee", {
         method: "POST",
@@ -821,22 +697,10 @@ export default function App() {
     <>
       <style>{css}</style>
       {phase === "landing" && (
-        <>
-          <Landing onStart={handleStart} />
-          <div
-            style={{ position: "fixed", bottom: 16, right: 20, fontSize: 11, color: G.muted, cursor: "pointer", letterSpacing: 1 }}
-            onClick={() => setShowAdminGate(true)}
-          >
-            Admin ⚙
-          </div>
-          {showAdminGate && (
-            <AdminGate onAccess={() => { setShowAdminGate(false); setPhase("admin"); }} onCancel={() => setShowAdminGate(false)} />
-          )}
-        </>
+        <Landing onStart={handleStart} />
       )}
       {phase === "exam" && <Exam name={name} deptId={deptId} onSubmit={handleSubmit} />}
       {phase === "results" && <Results name={name} />}
-      {phase === "admin" && <AdminDashboard onBack={() => setPhase("landing")} />}
     </>
   );
 }
