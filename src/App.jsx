@@ -503,16 +503,16 @@ export default function App() {
     const ts = new Date().toLocaleString("en-IN");
     setSavedAt(ts);
     setFinalAnswers(answers);
- 
+
     const sectionBreakdown = SECTIONS.map((sec, si) => {
       const correct = sec.questions.filter((q, qi) => answers[si]?.[qi] === q.answer).length;
       return `• ${sec.name}: ${correct} / ${sec.questions.length}`;
     }).join("\n");
- 
+
     const percentage = Math.round((score / TOTAL_QUESTIONS) * 100);
     const statusText = score >= PASS_MARK ? "PASSED ✅" : "FAILED ❌";
     const deptLabel = DEPARTMENTS.find(d => d.id === deptId)?.label || deptId;
- 
+
     const emailPayload = {
       Candidate_Name: name,
       Department: deptLabel,
@@ -522,26 +522,29 @@ export default function App() {
       Submitted_At: ts,
       Section_Performance: "\n" + sectionBreakdown
     };
- 
-    // Dispatch to pipeline integrations synchronously
+
+    // OPTIMIZATION: Send the data in the background without making the candidate wait
     try {
-      await Promise.all([
-        fetch(SHEETS_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, dept: deptId, attempt, score, max: TOTAL_QUESTIONS, pct: percentage, status: score >= PASS_MARK ? "PASS" : "FAIL" })
-        }),
-        fetch("https://formspree.io/f/mgobvpee", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(emailPayload)
-        })
-      ]);
+      // 1. Fire and forget to Google Sheets
+      fetch(SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, dept: deptId, attempt, score, max: TOTAL_QUESTIONS, pct: percentage, status: score >= PASS_MARK ? "PASS" : "FAIL" })
+      }).catch(e => console.error("Sheets background error:", e));
+
+      // 2. Fire and forget to Formspree
+      fetch("https://formspree.io/f/mgobvpee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailPayload)
+      }).catch(e => console.error("Formspree background error:", e));
+
     } catch (e) {
-      console.error("Transmission logs error:", e);
+      console.error("Transmission setup log error:", e);
     }
- 
+
+    // 3. Move INSTANTLY to the results screen so the candidate sees their score right away
     setIsSubmitting(false);
     setPhase("results");
   }
