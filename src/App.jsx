@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
- 
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwkblh0vj6_I66dAzORjF6CS1kn53b8JQcmsnsH5adF9dR9B-_z8tz9yb-KNLKBHgFD/exec";
+
 const MAX_ATTEMPTS = 3;
 const PASS_MARK = 35;
 const EXAM_DURATION = 90 * 60;
- 
+
 const DEPARTMENTS = [
   { id: "frontoffice",   label: "Front Office" },
   { id: "housekeeping",  label: "Housekeeping" },
@@ -12,9 +11,9 @@ const DEPARTMENTS = [
   { id: "kitchen",       label: "Kitchen" },
   { id: "finance",       label: "Finance" },
   { id: "engineering",   label: "Engineering" },
-  { id: "spa_recreation", label: "Spa & Recreation" },
+  { id: "Spa & Recreation",   label: "Spa & Recreation" },
 ];
- 
+
 const SECTION_META = [
   { id: "abstract",   name: "Abstract Reasoning",  time: 16, count: 11 },
   { id: "numerical",  name: "Numerical Reasoning",  time: 22, count: 11 },
@@ -22,10 +21,10 @@ const SECTION_META = [
   { id: "company",    name: "Company Knowledge",     time: 13, count: 13 },
   { id: "awareness",  name: "General Awareness",     time: 13, count: 13 },
 ];
- 
-const TOTAL_QUESTIONS = SECTION_META.reduce((s, m) => s + m.count, 0);
- 
-// ── COMMON QUESTION POOLS ─────────────────────────────────────────────────────
+
+const TOTAL_QUESTIONS_CALC = SECTION_META.reduce((s, m) => s + m.count, 0);
+
+// ── COMMON QUESTION POOLS (all departments) ───────────────────────────────────
 const COMMON = {
   abstract: [
     { q: "Series: 2, 4, 8, 16, __?", options: ["24","32","30","36"], answer: 1 },
@@ -66,13 +65,16 @@ const COMMON = {
     { q: "Some managers are leaders. All leaders are motivators. Some managers are motivators?", options: ["Definitely True","Definitely False","Cannot be determined","Partially True"], answer: 0 },
     { q: "In a matrix: Row1: 2,4,6 | Row2: 3,6,9 | Row3: 4,8,__?", options: ["10","11","12","14"], answer: 2 },
     { q: "If P is Q's mother and Q is R's sister, what is P to R?", options: ["Grandmother","Aunt","Mother","Sister"], answer: 2 },
-    // ADDED: Non-Verbal Pattern Reasoning Matrix Questions
-    { q: "Pattern Reasoning: A square has 1 dot inside, a triangle has 2 dots inside, a circle has 3 dots inside. What layout configuration describes the next natural logical step?", options: ["A line with 4 dots","A hexagon with 1 dot","A rectangle with 4 dots inside","An empty oval shape"], answer: 2 },
-    { q: "Matrix Rotation: An arrow points North. First step: turns East (90° clockwise). Second step: points South (90° clockwise). Where does it point on the fourth step?", options: ["North","East","South","West"], answer: 3 },
-    { q: "Symmetry Transformation: A matrix grid slice displays shaded blocks shifting from Top-Left to Top-Right, then Bottom-Right. Where will the shaded block rest next?", options: ["Top-Left","Bottom-Left","Center-Core","Remains unchanged"], answer: 1 }
   ],
- 
+
   numerical: [
+    /* Example Question with an Image placeholder for Data Representation */
+    { 
+      q: "Review the quarterly performance graph below. Which operational period demonstrated the steepest upward trend in net profit?", 
+      options: ["Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4"], 
+      answer: 2,
+      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=600&auto=format&fit=crop" // Replace with your real graph/chart link
+    },
     { q: "A is twice B's age. 10 yrs ago A was 3× B's age. A's current age?", options: ["30","35","40","45"], answer: 2 },
     { q: "Ratio of ages P:Q = 3:5. After 6 yrs = 2:3. P's current age?", options: ["12","15","18","21"], answer: 2 },
     { q: "Father is 30 yrs older than son. In 5 yrs father = 3× son's age. Son's current age?", options: ["8","10","12","15"], answer: 1 },
@@ -88,11 +90,8 @@ const COMMON = {
     { q: "Bought ₹800, sold ₹1,000. Profit %?", options: ["20%","22%","25%","30%"], answer: 2 },
     { q: "Simple interest: ₹5,000 at 8% p.a. for 3 years?", options: ["₹1,000","₹1,100","₹1,200","₹1,500"], answer: 2 },
     { q: "NPS = Promoters% − Detractors%. Promoters 45%, Detractors 15%. NPS?", options: ["25","30","35","40"], answer: 1 },
-    // ADDED: Data Representation / Interpretation Questions
-    { q: "Data Representation: A bar chart shows Department Guest Metrics: Q1 = 400, Q2 = 450, Q3 = 500, Q4 = 650. What is the total incremental gain in guest arrivals between Q1 and Q4?", options: ["150 guests","200 guests","250 guests","300 guests"], answer: 2 },
-    { q: "Data Interpretation: A pie chart shows total expense allocations (Linen: 40%, Amenities: 25%, Uniforms: 20%, Sundries: 15%). If total spending equals ₹2,00,000, how much money was spent on Amenities?", options: ["₹40,000","₹50,000","₹60,000","₹30,000"], answer: 1 }
   ],
- 
+
   verbal: [
     { q: "Synonym of 'Diligence':", options: ["Laziness","Hard work","Intelligence","Creativity"], answer: 1 },
     { q: "Antonym of 'Profound':", options: ["Deep","Shallow","Thoughtful","Meaningful"], answer: 1 },
@@ -121,9 +120,9 @@ const COMMON = {
     { q: "Fill in: The hotel prides itself on _____ service standards.", options: ["Mediocre","Impeccable","Ordinary","Average"], answer: 1 },
     { q: "Word meaning 'generous and friendly welcome':", options: ["Hostility","Hospitality","Frugality","Formality"], answer: 1 },
     { q: "Analogy — Knife : Sharp :: Pillow : __?", options: ["Hard","Rough","Soft","Flat"], answer: 2 },
-    { q: "Fill in: Supervisors must _____ communicate clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
+    { q: "Fill in: Supervisors must _____ clear instructions to their team.", options: ["withhold","communicate","ignore","confuse"], answer: 1 },
   ],
- 
+
   company: [
     { q: "In which year was The Oberoi Group founded?", options: ["1930","1932","1934","1938"], answer: 2 },
     { q: "Where was Rai Bahadur M.S. Oberoi born?", options: ["Delhi","Shimla","Undivided Punjab (now Pakistan)","Lahore"], answer: 2 },
@@ -156,7 +155,7 @@ const COMMON = {
     { q: "Company intranet where APEX can be accessed:", options: ["CONNECT","OPEN","PORTAL","HUB"], answer: 1 },
     { q: "The Oberoi, Mumbai reopened after renovation in:", options: ["2008","2009","2010","2011"], answer: 2 },
   ],
- 
+
   awareness: [
     { q: "G20 is a group of:", options: ["20 richest countries","20 most populous nations","Major world economies","UN Security Council members"], answer: 2 },
     { q: "National flower of India:", options: ["Rose","Lotus","Jasmine","Marigold"], answer: 1 },
@@ -175,7 +174,7 @@ const COMMON = {
     { q: "Bali is in:", options: ["Malaysia","Philippines","Indonesia","Thailand"], answer: 2 },
   ],
 };
- 
+
 // ── DEPARTMENT-SPECIFIC QUESTION POOLS ───────────────────────────────────────
 const DEPT_Q = {
   frontoffice: {
@@ -204,7 +203,7 @@ const DEPT_Q = {
       { q: "Fill in: A _____ manner is essential when dealing with guest complaints.", options: ["aggressive","passive","calm and professional","dismissive"], answer: 2 },
     ],
   },
- 
+
   housekeeping: {
     numerical: [
       { q: "120 occupied rooms; housekeeper cleans 15 rooms/shift. Housekeepers needed?", options: ["6","7","8","9"], answer: 2 },
@@ -231,7 +230,7 @@ const DEPT_Q = {
       { q: "The word 'sanitation' most closely means:", options: ["Decoration","Cleanliness and hygiene","Security","Inventory management"], answer: 1 },
     ],
   },
- 
+
   fnb: {
     numerical: [
       { q: "40 tables × 4 covers = 160 total. 75% occupied. Guests dining?", options: ["100","110","120","130"], answer: 2 },
@@ -258,7 +257,7 @@ const DEPT_Q = {
       { q: "Fill in: F&B team must _____ guests' dietary requirements before serving.", options: ["ignore","clarify","assume","forget"], answer: 1 },
     ],
   },
- 
+
   kitchen: {
     numerical: [
       { q: "Recipe serves 8, scale to 24. Original: 400g flour. New amount?", options: ["800g","1,000g","1,200g","1,600g"], answer: 2 },
@@ -285,436 +284,532 @@ const DEPT_Q = {
       { q: "Fill in: All kitchen staff must follow _____ procedures to ensure food safety.", options: ["casual","optional","hygiene","decorative"], answer: 2 },
     ],
   },
- 
-  finance: {
-    numerical: [
-      { q: "Monthly revenue ₹50L, expenses ₹35L. Net profit margin?", options: ["20%","25%","30%","35%"], answer: 2 },
-      { q: "Budgeted ₹2,00,000, Actual ₹2,30,000. Variance %?", options: ["10%","12%","15%","18%"], answer: 2 },
-      { q: "GST at 18% on ₹50,000 invoice. GST amount?", options: ["₹6,000","₹7,500","₹9,000","₹10,000"], answer: 2 },
-      { q: "Equipment ₹5,00,000 depreciated over 5 yrs (straight line). Annual depreciation?", options: ["₹80,000","₹90,000","₹1,00,000","₹1,20,000"], answer: 2 },
-      { q: "Revenue ₹10L, COGS ₹6L. Gross profit %?", options: ["30%","35%","40%","45%"], answer: 2 },
-      { q: "TDS 10% on professional service ₹80,000. Net payment after TDS?", options: ["₹68,000","₹70,000","₹72,000","₹75,000"], answer: 2 },
-      { q: "Loan ₹10L at 12% p.a. Annual interest?", options: ["₹1,00,000","₹1,10,000","₹1,20,000","₹1,30,000"], answer: 2 },
-      { q: "Occupancy revenue ₹40L + F&B revenue ₹20L. Total revenue variance if budget was ₹55L?", options: ["5%","7.5%","9.1%","11.1%"], answer: 3 },
-    ],
-    awareness: [
-      { q: "P&L Statement stands for:", options: ["Productivity & Labor","Profit and Loss","Performance & Liability","Pricing & Licensing"], answer: 1 },
-      { q: "CAPEX stands for:", options: ["Capital Expenditure","Cash Allocation Plan","Cost Analysis Program","Corporate Asset Portfolio"], answer: 0 },
-      { q: "OPEX stands for:", options: ["Operational Expenditure","Opportunity Cost Index","Overhead Price Estimate","Optimal Product Exchange"], answer: 0 },
-      { q: "ROI stands for:", options: ["Rate of Inflation","Return on Investment","Revenue Option Index","Risk Optimization Insurance"], answer: 1 },
-      { q: "Auditing in finance means:", options: ["Increasing prices","Official inspection of an organization's accounts","Hiring staff","Creating advertisements"], answer: 1 },
-      { q: "Break-even point is where:", options: ["Profits are maximized","Total revenue equals total costs","Losses are greatest","Expenses are zero"], answer: 1 },
-      { q: "Working Capital is calculated as:", options: ["Current Assets + Current Liabilities","Current Assets − Current Liabilities","Fixed Assets − Depreciation","Total Revenue − Gross Profit"], answer: 1 },
-      { q: "TDS stands for:", options: ["Total Tax Standard","Tax Deducted at Source","Tax Delivery System","Tariff Duty Scheme"], answer: 1 },
-    ],
-    verbal: [
-      { q: "Fill in: Financial records must be kept strictly _____ and accurate.", options: ["casual","confidential","public","flexible"], answer: 1 },
-      { q: "The term 'liquidity' refers to:", options: ["Company debt","Ability to convert assets into cash quickly","F&B beverage storage","Stock market valuation"], answer: 1 },
-    ],
-  },
- 
-  engineering: {
-    numerical: [
-      { q: "Generator runs 4 hrs on 20L fuel. Fuel consumed in 7 hours?", options: ["30L","32L","35L","40L"], answer: 2 },
-      { q: "Power bill ₹80,000 drops by 15% after LED switch. Savings in ₹?", options: ["₹10,000","₹11,000","₹12,000","₹15,000"], answer: 2 },
-      { q: "AC maintenance: 45 mins/unit. Time for 12 units (hours)?", options: ["7","8","9","10"], answer: 2 },
-      { q: "Water flow: 50L/min. Time to fill 2,500L tank (minutes)?", options: ["40","45","50","60"], answer: 2 },
-      { q: "Daily water consumption = 15,000L. Tank holds 60,000L. Reserves last for how many days?", options: ["2","3","4","5"], answer: 2 },
-      { q: "3 pumps run 8 hours each daily. Total operational hours per week?", options: ["160","164","168","172"], answer: 2 },
-      { q: "Boiler efficiency drops from 85% to 78%. What is the drop percentage?", options: ["5%","6%","7%","8%"], answer: 2 },
-      { q: "100 light fixtures, 12% are defective. How many working lights?", options: ["84","86","88","90"], answer: 2 },
-    ],
-    awareness: [
-      { q: "HVAC stands for:", options: ["High Voltage Alternating Current","Heating, Ventilation, and Air Conditioning","Hydro-Vacuum Air Circulation","Heavy Volume Appliance Control"], answer: 1 },
-      { q: "BMS in hotel engineering stands for:", options: ["Boiler Maintenance System","Building Management System","Budget Management Software","Battery Monitoring Standard"], answer: 1 },
-      { q: "Preventive maintenance means:", options: ["Fixing broken items","Routine inspection to prevent equipment failure","Replacing old assets entirely","Upgrading software"], answer: 1 },
-      { q: "CFL stands for:", options: ["Compact Fluorescent Lamp","Central Fuel Line","Current Flow Limiter","Cool Fan Lever"], answer: 0 },
-      { q: "STP in hotel utility stands for:", options: ["Standard Temperature Pressure","Sewage Treatment Plant","System Transfer Protocol","Safety Testing Procedure"], answer: 1 },
-      { q: "LED stands for:", options: ["Light Emitting Diode","Luminescent Energy Device","Low Energy Distribution","Liquid Electron Unit"], answer: 0 },
-      { q: "A multimeter is used to measure:", options: ["Water flow rate","Voltage, current, and resistance","Boiler pressure","Room humidity"], answer: 1 },
-      { q: "Chiller plant in a hotel is primarily used for:", options: ["Kitchen freezing","Central air conditioning","Laundry drying","Swimming pool heating"], answer: 1 },
-    ],
-    verbal: [
-      { q: "Fill in: Technical logs must be updated _____ to track equipment health.", options: ["monthly","randomly","diligently","rarely"], answer: 2 },
-      { q: "The word 'redundancy' in engineering means:", options: ["Firing staff","Inclusion of backup components to ensure continuous operation","System error","Wasting power"], answer: 1 },
-    ],
-  },
- 
-  spa_recreation: {
-    numerical: [
-      { q: "Massage priced ₹4,000 + 18% GST. Final bill?", options: ["₹4,500","₹4,600","₹4,720","₹4,800"], answer: 2 },
-      { q: "Spa room takes 15 mins to reset. Time for 8 resets (hours)?", options: ["1.5","2","2.5","3"], answer: 1 },
-      { q: "Therapist does 4 sessions of 60 mins and 2 sessions of 90 mins. Total hours worked?", options: ["5","6","7","8"], answer: 2 },
-      { q: "Spa product usage: 30ml oil per guest. 500ml bottle lasts for how many full sessions?", options: ["14","15","16","18"], answer: 2 },
-      { q: "Spa occupancy: 6 out of 10 rooms utilized over an 8-hour day. Occupancy rate?", options: ["50%","55%","60%","65%"], answer: 2 },
-      { q: "Gym instructor trains 12 guests on Mon, 15 on Tue, 18 on Wed. Average daily trainees?", options: ["14","15","16","17"], answer: 1 },
-      { q: "Spa package offers a 20% discount on a ₹6,000 facial. Package price?", options: ["₹4,500","₹4,600","₹4,800","₹5,000"], answer: 2 },
-      { q: "Pool chlorine check: 4 tests a day. Total tests in November?", options: ["100","110","120","130"], answer: 2 },
-    ],
-    awareness: [
-      { q: "Aroma therapy primarily uses:", options: ["Chemical pills","Essential oils derived from plants","Hot stones only","Acoustic sound waves"], answer: 1 },
-      { q: "Detoxification refers to:", options: ["Weight gain","Removal of toxins from the body","Muscle training","Cardio exercises"], answer: 1 },
-      { q: "Swedish massage is best known for:", options: ["Deep pressure on bone surfaces","Long, fluid stroking strokes to reduce tension","Acupuncture style needles","Using intense heat only"], answer: 1 },
-      { q: "Reflexology is mapped primarily to which parts of the body?", options: ["Spine and lower back","Feet, hands, and ears","Shoulders and neck","Face only"], answer: 1 },
-      { q: "Sauna room uses what type of environment?", options: ["Cold water immersion","Dry heat","Steam and humidity only","High altitude air simulation"], answer: 1 },
-      { q: "Steam room environments differ from Saunas because they have:", options: ["Lower temperature settings","High humidity and moisture","No wood panels","Zero water utilization"], answer: 1 },
-      { q: "Exfoliation in skincare means:", options: ["Applying sunscreen creams","Removing dead skin cells","Deep tissue tissue massaging","Skin tanning"], answer: 1 },
-      { q: "Hydrotherapy utilizes which element for wellness?", options: ["Air currents","Water","Mud packs","Herbal tea infusions"], answer: 1 },
-    ],
-    verbal: [
-      { q: "Fill in: A _____ environment must be preserved throughout the spa treatment zones.", options: ["vibrant","serene and peaceful","loud","busy"], answer: 1 },
-      { q: "The term 'rejuvenation' most closely means:", options: ["Tiring out","Making young or energetic again","Closing down operations","Scheduling appointments"], answer: 1 },
-    ],
-  },
 };
- 
-// CSS Styles
-const css = `
-  :root {
-    --bg: #0f172a; --card: #1e293b; --border: #334155;
-    --text: #f8fafc; --muted: #94a3b8; --accent: #3b82f6;
-    --accent-hover: #2563eb; --success: #10b981; --danger: #ef4444;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
-  .container { max-width: 700px; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); margin: 40px auto; }
-  h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
-  p.subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
-  .form-group { margin-bottom: 20px; }
-  label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-  input, select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; color: var(--text); font-size: 15px; transition: border 0.15s ease; }
-  input:focus, select:focus { outline: none; border-color: var(--accent); }
-  button { width: 100%; background: var(--accent); color: white; border: none; border-radius: 6px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s ease; display: flex; justify-content: center; align-items: center; gap: 8px; }
-  button:hover { background: var(--accent-hover); }
-  button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
-  .sec-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .sec-info h3 { font-size: 16px; font-weight: 600; }
-  .sec-info p { font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .badge { background: var(--border); color: var(--text); padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; text-transform: uppercase; }
-  .badge.locked { color: var(--muted); }
-  .badge.active { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
-  .badge.done { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
-  .q-text { font-size: 17px; font-weight: 500; margin-bottom: 18px; line-height: 1.4; }
-  .opt-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
-  .opt-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; text-align: left; color: var(--text); font-size: 15px; cursor: pointer; transition: all 0.15s ease; }
-  .opt-btn:hover { border-color: var(--muted); }
-  .opt-btn.selected { background: rgba(59,130,246,0.1); border-color: var(--accent); color: var(--accent); font-weight: 500; }
-  .nav-row { display: flex; justify-content: space-between; gap: 12px; }
-  .progress-bar { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
-  .score-big { font-size: 48px; font-weight: 700; text-align: center; margin: 24px 0 8px 0; color: var(--accent); }
-  .status-text { text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 24px; }
-  .status-text.pass { color: var(--success); }
-  .status-text.fail { color: var(--danger); }
-  .breakdown-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
-  .breakdown-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .breakdown-row:last-child { border: none; padding-bottom: 0; }
-  .breakdown-row:first-child { padding-top: 0; }
-`;
- 
-export default function App() {
-  const [phase, setPhase] = useState("landing");
-  const [name, setName] = useState("");
-  const [deptId, setDeptId] = useState("frontoffice");
-  const [attempt, setAttempt] = useState(1);
-  const [secAnswers, setSecAnswers] = useState({});
-  const [currentSec, setCurrentSec] = useState(0);
-  const [currentQ, setCurrentQ] = useState(0);
-  const [secTimeLeft, setSecTimeLeft] = useState(0);
-  const [finalAnswers, setFinalAnswers] = useState(null);
-  const [savedAt, setSavedAt] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
- 
-  const timerRef = useRef(null);
- 
-  const getQuestionsForSection = useCallback((secId) => {
-    const meta = SECTION_META.find(m => m.id === secId);
-    if (!meta) return [];
-    const commonPool = COMMON[secId] || [];
-    const deptPool = DEPT_Q[deptId]?.[secId] || [];
-    const combined = [...commonPool, ...deptPool];
-    
-    const seed = name.length + deptId.charCodeAt(0) + (attempt * 7);
-    const selected = [];
-    const poolCopy = [...combined];
-    
-    for (let i = 0; i < meta.count; i++) {
-      if (poolCopy.length === 0) break;
-      const index = (seed + i * 13) % poolCopy.length;
-      selected.push(poolCopy.splice(index, 1)[0]);
-    }
-    return selected;
-  }, [deptId, name, attempt]);
- 
-  const [SECTIONS, setSECTIONS] = useState([]);
- 
-  const startExamFlow = () => {
-    if (!name.trim()) return alert("Please enter candidate name.");
-    const sectionsData = SECTION_META.map(meta => ({
-      ...meta,
-      questions: getQuestionsForSection(meta.id)
-    }));
-    setSECTIONS(sectionsData);
-    setSecAnswers({});
-    setCurrentSec(0);
-    setCurrentQ(0);
-    setSecTimeLeft(sectionsData[0].time * 60);
-    setPhase("exam");
-  };
- 
-  const calcScore = (answersObj) => {
-    let score = 0;
-    SECTIONS.forEach((sec, si) => {
-      sec.questions.forEach((q, qi) => {
-        if (answersObj[si]?.[qi] === q.answer) score++;
-      });
+  return a;
+}
+
+function buildSections(deptId) {
+  return SECTION_META.map(m => {
+    const common = COMMON[m.id] || [];
+    const deptExtra = DEPT_Q[deptId]?.[m.id] || [];
+    const pool = [...common, ...deptExtra];
+    return {
+      ...m,
+      questions: shuffle(pool).slice(0, m.count)
+    };
+  });
+}
+
+function getAttemptData(name) {
+  try {
+    const key = "oberoi_cat_" + name.toLowerCase().trim().replace(/\s+/g, "_");
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : { count: 0, history: [] };
+  } catch {
+    return { count: 0, history: [] };
+  }
+}
+
+function saveAttempt(name, score, passed) {
+  try {
+    const key = "oberoi_cat_" + name.toLowerCase().trim().replace(/\s+/g, "_");
+    const data = getAttemptData(name);
+    data.count += 1;
+    data.history.push({ score, passed, date: new Date().toLocaleString("en-IN") });
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
+
+function calcScore(sections, answers) {
+  let score = 0;
+  sections.forEach((s, si) => {
+    s.questions.forEach((q, qi) => {
+      if (answers[si]?.[qi] === q.answer) score++;
     });
-    return score;
-  };
- 
-  const advanceSection = useCallback((answersData) => {
-    if (currentSec < SECTIONS.length - 1) {
-      const next = currentSec + 1;
-      setCurrentSec(next);
-      setCurrentQ(0);
-      setSecTimeLeft(SECTIONS[next].time * 60);
-    } else {
-      handleSubmit(answersData);
-    }
-  }, [currentSec, SECTIONS]);
- 
+  });
+  return score;
+}
+
+const G = {
+  bg: "#06080c",
+  card: "#0b0f17",
+  accent: "#111723",
+  border: "#1e2638",
+  gold: "#c9a84c",
+  goldLight: "#dfc475",
+  text: "#d1d7e0",
+  muted: "#7e8a9f",
+};
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:${G.bg}; color:${G.text}; font-family:'DM Sans',sans-serif; }
+  ::-webkit-scrollbar { width:4px }
+  ::-webkit-scrollbar-thumb { background:${G.gold}; border-radius:4px }
+  .serif { font-family:'Playfair Display',serif }
+  .btn-gold { background:linear-gradient(135deg,${G.gold},${G.goldLight}); color:#0a0d14; font-weight:600; border:none; cursor:pointer; padding:13px 32px; border-radius:2px; font-size:14px; letter-spacing:.4px; transition:all .2s; font-family:'DM Sans',sans-serif }
+  .btn-gold:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 6px 24px rgba(201,168,76,.3) }
+  .btn-gold:disabled { opacity:.35; cursor:not-allowed; transform:none }
+  .btn-outline { background:transparent; color:${G.gold}; border:1px solid ${G.gold}; padding:10px 22px; border-radius:2px; cursor:pointer; font-size:13px; transition:all .2s; font-family:'DM Sans',sans-serif }
+  .btn-outline:hover { background:${G.gold}; color:#0a0d14 }
+  .card { background:${G.card}; border:1px solid ${G.border}; border-radius:4px }
+  .opt-btn { width:100%; text-align:left; padding:13px 16px; background:${G.accent}; border:1px solid ${G.border}; color:${G.text}; cursor:pointer; border-radius:3px; font-size:14px; transition:all .15s; font-family:'DM Sans',sans-serif; display:flex; align-items:center; gap:12px }
+  .opt-btn:hover { border-color:${G.gold}; background:#1d2f50 }
+  .opt-btn.sel { border-color:${G.gold}; background:#1d2f50 }
+  .olbl { width:26px; height:26px; border-radius:50%; border:1px solid ${G.muted}; display:flex; align-items:center; justify-content:center; font-size:12px; color:${G.muted}; flex-shrink:0; font-weight:600 }
+  .opt-btn.sel .olbl { border-color:${G.gold}; color:${G.gold}; background:rgba(201,168,76,.1) }
+  .div { height:1px; background:${G.border}; margin:18px 0 }
+  @keyframes fi { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .fi { animation:fi .4s cubic-bezier(0.16,1,0.3,1) both }
+  input, select { width:100%; padding:12px 14px; background:${G.accent}; border:1px solid ${G.border}; color:${G.text}; font-size:14px; border-radius:2px; transition:all .2s; outline:none; font-family:'DM Sans',sans-serif }
+  input:focus, select:focus { border-color:${G.gold} }
+  .sbtn { background:${G.accent}; border:1px solid ${G.border}; color:${G.muted}; padding:6px 12px; font-size:11px; border-radius:2px; cursor:pointer; transition:all .15s }
+  .sbtn.act { background:rgba(201,168,76,.08); border-color:${G.gold}; color:${G.gold} }
+  .sbtn.dn { border-color:rgba(201,168,76,.3); color:${G.text} }
+  .pbar { background:${G.accent}; height:3px; border-radius:2px; overflow:hidden }
+  .pfill { background:${G.gold}; height:100%; transition:width .3s ease }
+  .adot { width:8px; height:8px; border-radius:50% }
+  .dept-badge { background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.2); color:${G.gold}; font-size:10px; padding:2px 8px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; border-radius:10px }
+  .tmr { transition:color .3s }
+  .tmr.warn { color:#e85c4c !important }
+  .tmr.dng { color:#e85c4c !important; animation: blink 1s infinite }
+  @keyframes blink { 50% { opacity: 0.5 } }
+  .qimg-box { width:100%; max-width:480px; margin:16px 0; border-radius:4px; overflow:hidden; border:1px solid ${G.border}; background:#000; }
+  .qimg { width:100%; height:auto; display:block; object-fit:contain; }
+`;
+
+export default function AssessmentSystem() {
+  const [phase, setPhase] = useState("auth"); // auth, test, results
+  const [name, setName] = useState("");
+  const [dept, setDept] = useState("");
+  const [err, setErr] = useState("");
+
+  const [sections, setSections] = useState([]);
+  const [si, setSi] = useState(0);
+  const [qi, setQi] = useState(0);
+  const [ans, setAns] = useState([]); // Array of arrays matching sections layout
+  const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
+
+  const timerRef = useRef(null);
+
+  // Read configurations from localStorage profile context dynamically
+  const attemptInfo = name.trim() ? getAttemptData(name) : null;
+  const attemptsUsed = attemptInfo ? attemptInfo.count : 0;
+  const attemptsLeft = Math.max(0, MAX_ATTEMPTS - attemptsUsed);
+
   useEffect(() => {
-    if (phase !== "exam") return;
-    timerRef.current = setInterval(() => {
-      setSecTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          advanceSection(secAnswers);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (phase === "test" && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(p => {
+          if (p <= 1) {
+            clearInterval(timerRef.current);
+            autoSubmit();
+            return 0;
+          }
+          return p - 1;
+        });
+      }, 1000);
+    }
     return () => clearInterval(timerRef.current);
-  }, [phase, currentSec, secAnswers, advanceSection]);
- 
-  async function handleSubmit(answers) {
-    setIsSubmitting(true);
-    const score = calcScore(answers);
-    const ts = new Date().toLocaleString("en-IN");
-    setSavedAt(ts);
-    setFinalAnswers(answers);
- 
-    const sectionBreakdown = SECTIONS.map((sec, si) => {
-      const correct = sec.questions.filter((q, qi) => answers[si]?.[qi] === q.answer).length;
+  }, [phase, timeLeft]);
+
+  const handleNameChange = (val) => {
+    setName(val);
+    setErr("");
+  };
+
+  const handleStart = () => {
+    if (!name.trim()) return setErr("Please state your full designation identity.");
+    if (!dept) return setErr("Please specify your targeted operational track.");
+    
+    const info = getAttemptData(name);
+    if (info.count >= MAX_ATTEMPTS) {
+      return setErr("Maximum allowed portal authentications (3/3) have been reached for this profile.");
+    }
+
+    const built = buildSections(dept);
+    const answersMatrix = built.map(s => Array(s.questions.length).fill(null));
+
+    setSections(built);
+    setAns(answersMatrix);
+    setSi(0);
+    setQi(0);
+    setTimeLeft(EXAM_DURATION);
+    setPhase("test");
+  };
+
+  const autoSubmit = () => {
+    // Triggers when runtime drops to absolute zero
+    handleCompleteSubmit(true);
+  };
+
+  const submit = () => {
+    handleCompleteSubmit(false);
+  };
+
+  const handleCompleteSubmit = async (wasAuto) => {
+    clearInterval(timerRef.current);
+    
+    // 1. Calculations
+    const totalScore = calcScore(sections, ans);
+    const isPassed = totalScore >= PASS_MARK;
+    saveAttempt(name, totalScore, isPassed);
+
+    setPhase("results");
+
+    // 2. Format transactional summaries for Formspree email payload
+    const sectionBreakdown = sections.map((sec, idx) => {
+      const correct = sec.questions.filter((q, qidx) => ans[idx]?.[qidx] === q.answer).length;
       return `• ${sec.name}: ${correct} / ${sec.questions.length}`;
     }).join("\n");
- 
-    const percentage = Math.round((score / TOTAL_QUESTIONS) * 100);
-    const statusText = score >= PASS_MARK ? "PASSED ✅" : "FAILED ❌";
-    const deptLabel = DEPARTMENTS.find(d => d.id === deptId)?.label || deptId;
- 
+
+    const percentage = Math.round((totalScore / TOTAL_QUESTIONS_CALC) * 100);
+    const ts = new Date().toLocaleString("en-IN");
+
     const emailPayload = {
       Candidate_Name: name,
-      Department: deptLabel,
-      Attempt_Number: attempt,
-      Final_Score: `${score} / ${TOTAL_QUESTIONS} (${percentage}%)`,
-      Status: statusText,
+      Final_Score: `${totalScore} / ${TOTAL_QUESTIONS_CALC} (${percentage}%)`,
+      Status: isPassed ? "PASSED ✅" : "FAILED ❌",
       Submitted_At: ts,
+      Submission_Mode: wasAuto ? "AUTOMATIC (TIMEOUT) ⏳" : "MANUAL USER SUBMISSION 📑",
       Section_Performance: "\n" + sectionBreakdown
     };
- 
+
+    // 3. Post to Email Formspree Endpoint directly
     try {
-      fetch(SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, dept: deptId, attempt, score, max: TOTAL_QUESTIONS, pct: percentage, status: score >= PASS_MARK ? "PASS" : "FAIL" })
-      }).catch(e => console.error("Sheets background error:", e));
- 
-      fetch("https://formspree.io/f/mgobvpee", {
+      await fetch("https://formspree.io/f/mgobvpee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailPayload)
-      }).catch(e => console.error("Formspree background error:", e));
- 
+        body: JSON.stringify(emailPayload),
+      });
     } catch (e) {
-      console.error("Transmission setup log error:", e);
+      console.error("Transmission to Formspree fallback network error:", e);
     }
- 
-    setIsSubmitting(false);
-    setPhase("results");
-  }
- 
-  const deptLabel = DEPARTMENTS.find(d => d.id === deptId)?.label || "";
- 
-  return (
-    <>
-      <style>{css}</style>
-      
-      {phase === "landing" && (
-        <div className="container" style={{ textAlign: "center", padding: "48px 32px" }}>
-          <div style={{ fontSize: 42, marginBottom: 12 }}>✨</div>
-          <h1>Oberoi CAT Exam</h1>
-          <p className="subtitle">Cognitive Assessment Test for SDP Candidates</p>
-          <div style={{ background: "var(--bg)", borderRadius: 8, padding: 20, border: "1px solid var(--border)", textAlign: "left", marginBottom: 28, fontSize: 14, color: "var(--muted)", lineHeight: 1.5 }}>
-            <strong style={{ color: "var(--text)", display: "block", marginBottom: 6 }}>Exam Instructions:</strong>
-            • The test consists of 5 timed sections containing a total of {TOTAL_QUESTIONS} questions.<br/>
-            • Each section has a hard time limit. Unsaved questions auto-submit when the timer hits zero.<br/>
-            • Ensure you have a stable network connection before starting.
-          </div>
-          <button onClick={() => setPhase("setup")}>Configure Candidate Profile →</button>
-        </div>
-      )}
- 
-      {phase === "setup" && (
-        <div className="container">
-          <h1>Candidate Setup</h1>
-          <p className="subtitle">Enter the assessment parameters below</p>
-          
-          <div className="form-group">
-            <label>Candidate Full Name</label>
-            <input type="text" placeholder="e.g. Manik Sharma" value={name} onChange={e => setName(e.target.value)} />
-          </div>
- 
-          <div className="form-group">
-            <label>Target Department</label>
-            <select value={deptId} onChange={e => setDeptId(e.target.value)}>
+  };
+
+  const Logo = () => (
+    <div style={{ textAlign:"center", marginBottom:8 }}>
+      <div className="serif" style={{ fontSize:22, color:G.gold, letterSpacing:2, fontWeight:700 }}>THE OBEROI GROUP</div>
+      <div style={{ fontSize:9, color:G.muted, letterSpacing:3, marginTop:2, textTransform:"uppercase" }}>Talent Assessment Portal</div>
+    </div>
+  );
+
+  const fmtTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  if (phase === "auth") {
+    const deptLabel = DEPARTMENTS.find(d => d.id === dept)?.label || "";
+    return (
+      <>
+        <style>{css}</style>
+        <div className="fi" style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div className="card" style={{ maxWidth:420, width:"100%", padding:32 }}>
+            <Logo />
+            <div className="div" />
+            
+            <div style={{ background:G.accent, border:`1px solid ${G.border}`, padding:14, borderRadius:2, marginBottom:18 }}>
+              {[
+                ["Total Duration", `${EXAM_DURATION / 60} Minutes`],
+                ["Total Items", `${TOTAL_QUESTIONS_CALC} Tasks`],
+                ["Pass Mark", `${PASS_MARK} Correct`]
+              ].map(([k,v], i)=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginTop:i?5:0 }}>
+                  <span style={{ color:G.muted }}>{k}</span>
+                  <span style={{ color:k==="Pass Mark"?G.gold:G.text, fontWeight:600 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontSize:11, color:G.muted, lineHeight:1.7, marginBottom:18 }}>
+              • Questions are randomized and department-relevant — each attempt differs.<br/>
+              • Navigate freely across all sections. Auto-submits when time runs out.
+            </div>
+
+            {/* Full Name */}
+            <label style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", display:"block", marginBottom:6 }}>Full Name</label>
+            <input 
+              type="text" 
+              placeholder="Enter your full name" 
+              value={name} 
+              onChange={e => handleNameChange(e.target.value)}
+              onKeyDown={e => e.key==="Enter" && handleStart()}
+            />
+
+            {/* Attempt indicator */}
+            {attemptInfo && name.trim() && (
+              <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                <span style={{ fontSize:11, color:G.muted }}>Attempts used:</span>
+                {Array.from({ length:MAX_ATTEMPTS }).map((_,i)=>(
+                  <div key={i} className="adot" style={{ background:i<attemptsUsed?"#e85c4c":G.border }} />
+                ))}
+                <span style={{ fontSize:11, color:attemptsLeft===0?"#e85c4c":G.gold }}>
+                  {attemptsLeft === 0 ? "No attempts left" : `${attemptsLeft} remaining`}
+                </span>
+              </div>
+            )}
+
+            {/* Department */}
+            <label style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", display:"block", marginBottom:6, marginTop:14 }}>Department</label>
+            <select value={dept} onChange={e => { setDept(e.target.value); setErr(""); }}>
+              <option value="">-- Select your department --</option>
               {DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
             </select>
-          </div>
- 
-          <div className="form-group">
-            <label>Attempt Number</label>
-            <select value={attempt} onChange={e => setAttempt(Number(e.target.value))}>
-              {[1, 2, 3].map(n => <option key={n} value={n}>Attempt {n} {n === MAX_ATTEMPTS ? "(Final Match)" : ""}</option>)}
-            </select>
-          </div>
- 
-          <div className="nav-row" style={{ marginTop: 28 }}>
-            <button style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} onClick={() => setPhase("landing")}>Back</button>
-            <button onClick={() => setPhase("lobby")}>Review Profile →</button>
-          </div>
-        </div>
-      )}
- 
-      {phase === "lobby" && (
-        <div className="container">
-          <h1>Confirm Details</h1>
-          <p className="subtitle">Verify the timeline structures before initializing token</p>
-          
-          <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 20, marginBottom: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Candidate Name:</span><strong>{name}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}><span style={{ color: "var(--muted)" }}>Core Track:</span><strong>{deptLabel}</strong></div>
-            <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: 4 }}><span style={{ color: "var(--muted)" }}>SDP Track:</span><strong>Attempt Allocation {attempt}</strong></div>
-          </div>
- 
-          <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--muted)", marginBottom: 12 }}>Assessment Breakdown Map</h2>
-          {SECTION_META.map((meta, idx) => (
-            <div className="sec-card" key={meta.id}>
-              <div className="sec-info">
-                <h3>{meta.name}</h3>
-                <p>{meta.count} Questions selected out of shared matrices</p>
+
+            {dept && (
+              <div style={{ marginTop:8, fontSize:12, color:G.muted }}>
+                ✦ Questions will include <span style={{ color:G.gold }}>{deptLabel}</span>-specific scenarios.
               </div>
-              <span className="badge">{meta.time} Mins</span>
-            </div>
-          ))}
- 
-          <div className="nav-row" style={{ marginTop: 28 }}>
-            <button style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} onClick={() => setPhase("setup")}>Modify</button>
-            <button style={{ background: "var(--success)" }} onClick={startExamFlow}>Begin Official Examination 🚀</button>
-          </div>
-        </div>
-      )}
- 
-      {phase === "exam" && SECTIONS[currentSec] && (
-        <div className="container">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--accent)", fontWeight: 6 }}>{SECTIONS[currentSec].name}</span>
-            <span style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 7, color: secTimeLeft < 60 ? "var(--danger)" : "var(--text)", background: "var(--bg)", padding: "4px 10px", borderRadius: 4, border: "1px solid var(--border)" }}>
-              ⏳ {Math.floor(secTimeLeft / 60)}:{(secTimeLeft % 60).toString().padStart(2, "0")}
-            </span>
-          </div>
-          <h2 style={{ fontSize: 15, fontWeight: 5, marginBottom: 20, color: "var(--muted)" }}>Question {currentQ + 1} of {SECTIONS[currentSec].questions.length}</h2>
-          
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${((currentQ + 1) / SECTIONS[currentSec].questions.length) * 100}%` }}></div>
-          </div>
- 
-          {SECTIONS[currentSec].questions[currentQ] && (
-            <>
-              <div className="q-text">{SECTIONS[currentSec].questions[currentQ].q}</div>
-              <div className="opt-grid">
-                {SECTIONS[currentSec].questions[currentQ].options.map((opt, oIdx) => (
-                  <button 
-                    key={oIdx} 
-                    className={`opt-btn ${secAnswers[currentSec]?.[currentQ] === oIdx ? "selected" : ""}`}
-                    onClick={() => {
-                      setSecAnswers(prev => ({
-                        ...prev,
-                        [currentSec]: { ...(prev[currentSec] || {}), [currentQ]: oIdx }
-                      }));
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
+            )}
+
+            {err && (
+              <div style={{ color:"#e85c4c", fontSize:12, marginTop:12, textAlign:"center", fontWeight:500 }}>
+                ⚠️ {err}
               </div>
-            </>
-          )}
- 
-          <div className="nav-row">
-            <button 
-              disabled={currentQ === 0} 
-              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} 
-              onClick={() => setCurrentQ(prev => prev - 1)}
-            >
-              Previous Question
+            )}
+
+            <button className="btn-gold" style={{ width:"100%", marginTop:20 }} onClick={handleStart} disabled={attemptsLeft===0}>
+              Begin Evaluation
             </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (phase === "test") {
+    const sec = sections[si];
+    const q = sec.questions[qi];
+    const selectedOption = ans[si]?.[qi];
+
+    const totalAns = ans.reduce((sum, row) => sum + row.filter(x => x !== null).length, 0);
+    const tc = timeLeft < 120 ? "tmr dng" : timeLeft < 600 ? "tmr warn" : "tmr";
+    const absQ = sections.slice(0, si).reduce((t, x) => t + x.questions.length, 0) + qi;
+
+    function pick(oi) {
+      const a = ans.map(r => [...r]);
+      a[si][qi] = oi;
+      setAns(a);
+    }
+
+    function next() {
+      if (qi < sec.questions.length - 1) setQi(qi + 1);
+      else if (si < sections.length - 1) { setSi(si + 1); setQi(0); }
+    }
+
+    function prev() {
+      if (qi > 0) setQi(qi - 1);
+      else if (si > 0) { setSi(si - 1); setQi(sections[si - 1].questions.length - 1); }
+    }
+
+    const deptLabel = DEPARTMENTS.find(d => d.id === dept)?.label || "";
+
+    return (
+      <>
+        <style>{css}</style>
+        <div style={{ minHeight:"100vh", background:G.bg, display:"flex", flexDirection:"column" }}>
+          {/* Header */}
+          <div style={{ background:G.card, borderBottom:`1px solid ${G.border}`, padding:"10px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10, position:"sticky", top:0, zIndex:100 }}>
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
+                <div className="serif" style={{ fontSize:14, color:G.text }}>{name}</div>
+                <div className="dept-badge">{deptLabel}</div>
+              </div>
+              <div style={{ fontSize:11, color:G.muted }}>Q {absQ + 1}/{TOTAL_QUESTIONS_CALC} · {totalAns} answered</div>
+            </div>
             
-            {currentQ < SECTIONS[currentSec].questions.length - 1 ? (
-              <button onClick={() => setCurrentQ(prev => prev + 1)}>Next Question →</button>
-            ) : currentSec < SECTIONS.length - 1 ? (
-              <button style={{ background: "var(--accent)" }} onClick={() => advanceSection(secAnswers)}>Complete Section ➡️</button>
-            ) : (
-              <button style={{ background: "var(--success)" }} disabled={isSubmitting} onClick={() => advanceSection(secAnswers)}>
-                {isSubmitting ? "Submitting Exam..." : "Submit Final Assessment 🏁"}
-              </button>
-            )
-          }
+            <div style={{ textAlign:"center" }}>
+              <div className={tc} style={{ fontSize:26, fontWeight:700, letterSpacing:2, color:timeLeft<300?"#e85c4c":G.gold }}>{fmtTime(timeLeft)}</div>
+              <div style={{ fontSize:10, color:G.muted, letterSpacing:1 }}>REMAINING</div>
+            </div>
+
+            <button className="btn-gold" style={{ padding:"9px 22px", fontSize:13 }} onClick={() => window.confirm("Submit exam? This will lock your final responses.") && submit()}>
+              Submit Exam
+            </button>
           </div>
-        </div>
-      )}
- 
-      {phase === "results" && finalAnswers && (
-        <div className="container">
-          <h1>Assessment Completed</h1>
-          <p className="subtitle">Your scores have been safely compiled and dispatched to the Cloud</p>
-          
-          <div className="score-big">{calcScore(finalAnswers)} / {TOTAL_QUESTIONS}</div>
-          <div className={`status-text ${calcScore(finalAnswers) >= PASS_MARK ? "pass" : "fail"}`}>
-            {calcScore(finalAnswers) >= PASS_MARK ? "PASSED ✅" : "FAILED ❌"}
+
+          {/* Progress fill line bar */}
+          <div style={{ padding:"5px 20px", background:G.card, borderBottom:`1px solid ${G.border}` }}>
+            <div className="pbar"><div className="pfill" style={{ width:`${(totalAns/TOTAL_QUESTIONS_CALC)*100}%` }} /></div>
           </div>
- 
-          <div className="breakdown-box">
-            <h3 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--muted)", marginBottom: 12 }}>Sectional Scoring Overview</h3>
-            {SECTIONS.map((sec, si) => {
-              const correct = sec.questions.filter((q, qi) => finalAnswers[si]?.[qi] === q.answer).length;
-              return (
-                <div className="breakdown-row" key={sec.id}>
-                  <span>{sec.name}</span>
-                  <strong>{correct} / {sec.questions.length}</strong>
+
+          {/* Layout split wrapper block */}
+          <div style={{ flex:1, display:"flex", flexWrap:"wrap" }}>
+            {/* Left Main Question Form Sheet */}
+            <div style={{ flex:"1 1 500px", padding:32, borderRight:`1px solid ${G.border}` }}>
+              <div className="card fi" key={`${si}-${qi}`} style={{ padding:28 }}>
+                <span style={{ fontSize:10, color:G.gold, letterSpacing:1.5, textTransform:"uppercase", fontWeight:600 }}>{sec.name}</span>
+                <p style={{ fontSize:16, marginTop:8, color:G.text, lineHeight:1.6, fontWeight:400 }}>{q.q}</p>
+
+                {/* --- IMAGE / FIGURE SUPPORT CONTAINER --- */}
+                {q.image && (
+                  <div className="qimg-box">
+                    <img 
+                      src={q.image} 
+                      alt="Question attachment illustration" 
+                      className="qimg"
+                    />
+                  </div>
+                )}
+                {/* --- END IMAGE SUPPORT --- */}
+
+                <div style={{ marginTop:24, display:"flex", flexDirection:"column", gap:10 }}>
+                  {q.options.map((opt, oi) => {
+                    const isSel = selectedOption === oi;
+                    return (
+                      <button key={oi} className={`opt-btn ${isSel?'sel':''}`} onClick={() => pick(oi)}>
+                        <div className="olbl">{String.fromCharCode(65+oi)}</div>
+                        <span>{opt}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
- 
-          <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>
-            Security Signature ID Reference: token_cat_{Date.now().toString(16)}<br/>
-            Saved into operational matrix log at: {savedAt}
+              </div>
+
+              {/* Action Buttons footer */}
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:20 }}>
+                <button className="btn-outline" onClick={prev} disabled={si===0 && qi===0}>Previous</button>
+                <button className="btn-gold" style={{ padding:"10px 28px" }} onClick={next} disabled={si===sections.length-1 && qi===sec.questions.length-1}>Next</button>
+              </div>
+            </div>
+
+            {/* Right Map Navigation Grid Sidebar */}
+            <div style={{ width:280, padding:24, background:`linear-gradient(to bottom, ${G.card}, ${G.bg})` }}>
+              <div style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:12, fontWeight:600 }}>Section Outline Map</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                {sections.map((s, sidx) => {
+                  const itemsDone = ans[sidx]?.filter(x => x !== null).length || 0;
+                  const totalItems = s.questions.length;
+                  const isSectionActive = sidx === si;
+
+                  return (
+                    <div key={s.id} style={{ background:isSectionActive?"rgba(201,168,76,0.03)":"transparent", padding:isSectionActive?10:0, borderRadius:4, border:isSectionActive?`1px solid ${G.border}`:"1px solid transparent" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                        <span style={{ fontSize:12, fontWeight:500, color:isSectionActive?G.gold:G.text }}>{s.name}</span>
+                        <span style={{ fontSize:10, color:G.muted }}>{itemsDone}/{totalItems}</span>
+                      </div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                        {s.questions.map((_, qidx) => {
+                          const isDone = ans[sidx]?.[qidx] !== null;
+                          const isCurrent = sidx === si && qidx === qi;
+                          let cl = "sbtn";
+                          if (isCurrent) cl += " act";
+                          else if (isDone) cl += " dn";
+
+                          return (
+                            <button key={qidx} className={cl} style={{ width:28, height:26, padding:0 }} onClick={() => { setSi(sidx); setQi(qidx); }}>
+                              {qidx + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="div" />
+              <div style={{ display:"flex", flexDirection:"column", gap:8, fontSize:11, color:G.muted }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:12, height:12, background:"rgba(201,168,76,0.08)", border:`1px solid ${G.gold}`, borderRadius:2 }} /><span>Current Item Position</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:12, height:12, background:G.accent, border:`1px solid ${G.gold}`, borderRadius:2 }} /><span>Answered Frame</span></div>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:12, height:12, background:G.accent, border:`1px solid ${G.border}`, borderRadius:2 }} /><span>Not answered</span></div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
-    </>
-  );
+      </>
+    );
+  }
+
+  if (phase === "results") {
+    const totalScore = calcScore(sections, ans);
+    const passed = totalScore >= PASS_MARK;
+    const pct = Math.round((totalScore / TOTAL_QUESTIONS_CALC) * 100);
+    const attLeft = Math.max(0, MAX_ATTEMPTS - (attemptInfo ? attemptInfo.count : 0));
+    
+    const deptLabel = DEPARTMENTS.find(d => d.id === dept)?.label || "";
+
+    return (
+      <>
+        <style>{css}</style>
+        <div className="fi" style={{ minHeight:"100vh", background:`radial-gradient(ellipse at 80% 20%,#0d1a2e 0%,${G.bg} 60%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div style={{ maxWidth:520, width:"100%" }}>
+            <Logo />
+            <div style={{ textAlign:"center", marginTop:24 }}>
+              <div style={{ fontSize:10, letterSpacing:4, color:G.muted, textTransform:"uppercase", marginBottom:10 }}>Examination Complete</div>
+              <div style={{ marginBottom:8 }}>
+                {passed ? (
+                  <span style={{ color:"#52c41a", background:"rgba(82,196,26,0.1)", border:"1px solid rgba(82,196,26,0.2)", padding:"4px 12px", fontSize:11, fontWeight:600, letterSpacing:1, borderRadius:2 }}>SUFFICIENT SCORE VALIDATED</span>
+                ) : (
+                  <span style={{ color:"#e85c4c", background:"rgba(232,92,76,0.1)", border:"1px solid rgba(232,92,76,0.2)", padding:"4px 12px", fontSize:11, fontWeight:600, letterSpacing:1, borderRadius:2 }}>CRITERIA MARGIN NOT MET</span>
+                )}
+              </div>
+            </div>
+
+            <div className="card" style={{ padding:32, marginTop:20, textAlign:"center" }}>
+              <div style={{ fontSize:13, color:G.muted }}>Logged Response Candidate</div>
+              <div className="serif" style={{ fontSize:22, color:G.text, marginTop:4, fontWeight:600 }}>{name}</div>
+              <div style={{ display:"inline-block", marginTop:6 }} className="dept-badge">{deptLabel}</div>
+              
+              <div className="div" />
+              
+              <div style={{ display:"flex", justifyContent:"center", gap:40, margin:"10px 0" }}>
+                <div>
+                  <div style={{ fontSize:36, fontWeight:700, color:passed?G.gold:"#e85c4c", fontFamily:"sans-serif" }}>{totalScore}</div>
+                  <div style={{ fontSize:10, color:G.muted, letterSpacing:1, marginTop:2 }}>TOTAL SCORE</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:36, fontWeight:700, color:G.text, fontFamily:"sans-serif" }}>{pct}%</div>
+                  <div style={{ fontSize:10, color:G.muted, letterSpacing:1, marginTop:2 }}>PERCENTAGE</div>
+                </div>
+              </div>
+
+              <div className="div" />
+
+              <div style={{ textAlign:"left" }}>
+                <div style={{ fontSize:11, color:G.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:10, fontWeight:600 }}>Modular Performance Summary</div>
+                {sections.map((s, si) => {
+                  const correct = s.questions.filter((q, qi) => ans[si]?.[qi] === q.answer).length;
+                  const ratio = (correct / s.questions.length) * 100;
+                  return (
+                    <div key={s.id} style={{ marginBottom:12 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}>
+                        <span style={{ color:G.text }}>{s.name}</span>
+                        <span style={{ color:G.muted, fontWeight:600 }}>{correct} / {s.questions.length}</span>
+                      </div>
+                      <div style={{ background:G.accent, height:2, borderRadius:1, overflow:"hidden" }}>
+                        <div style={{ background:ratio>=50?G.gold:"#e85c4c", width:`${ratio}%`, height:"100%" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ textAlign:"center", marginTop:20, fontSize:12, color:G.muted, lineHeight:1.6 }}>
+              Your full grading breakdown metric has been cleanly dispatched to the review desk via fallback tracking relays. <br/>
+              {attLeft > 0 ? (
+                <span>You have <strong style={{ color:G.gold }}>{attLeft}</strong> profile authentications left in your reservation queue.</span>
+              ) : (
+                <span style={{ color:"#e85c4c" }}>All allotted attempts for this specific evaluation sequence are now exhausted.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return null;
 }
